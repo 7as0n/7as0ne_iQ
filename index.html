@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حساباتي — إدارة المبيعات والديون</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <div class="header-content">
+        <div>
+            <h1>💼 حساباتي</h1>
+            <p>إدارة المبيعات · الديون · المخزون · المصاريف</p>
+        </div>
+        <div class="header-actions">
+            <div class="header-date" id="headerDate"></div>
+            <button class="header-btn" onclick="quickBackup()" title="نسخة احتياطية سريعة">💾</button>
+            <button class="header-btn" onclick="exportData()" title="تصدير البيانات">📤</button>
+            <button class="header-btn" onclick="document.getElementById('importFile').click()" title="استيراد البيانات">📥</button>
+            <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
+        </div>
+    </div>
+</header>
+
+<nav class="menu">
+    <button class="active" onclick="showPage('dashboard', this)">🏠 الرئيسية</button>
+    <button onclick="showPage('sales', this)">💰 المبيعات</button>
+    <button onclick="showPage('purchases', this)">🛒 المشتريات</button>
+    <button onclick="showPage('customers', this)">👥 الزبائن</button>
+    <button onclick="showPage('suppliers', this)">🏪 المجهزين</button>
+    <button onclick="showPage('products', this)">📦 المخزون</button>
+    <button onclick="showPage('debts', this)">📒 الديون</button>
+    <button onclick="showPage('expenses', this)">💸 المصاريف</button>
+    <button onclick="showPage('cashbox', this)">💵 الخزنة</button>
+    <button onclick="showPage('backup', this)">💾 النسخ الاحتياطي</button>
+</nav>
+
+<main>
+
+    <!-- ============== الرئيسية ============== -->
+    <section id="dashboard" class="page active-page">
+
+        <h2>لوحة التحكم</h2>
+
+        <div class="cards">
+            <div class="card card-blue">
+                <span>💰 مبيعات اليوم</span>
+                <strong id="todaySales">0</strong>
+                <small>د.ع</small>
+            </div>
+            <div class="card card-orange">
+                <span>🛒 مشتريات اليوم</span>
+                <strong id="todayPurchases">0</strong>
+                <small>د.ع</small>
+            </div>
+            <div class="card card-red">
+                <span>👤 ديون لنا</span>
+                <strong id="customersDebt">0</strong>
+                <small>د.ع</small>
+            </div>
+            <div class="card card-green">
+                <span>🏪 ديون علينا</span>
+                <strong id="suppliersDebt">0</strong>
+                <small>د.ع</small>
+            </div>
+            <div class="card card-purple">
+                <span>💸 المصاريف</span>
+                <strong id="totalExpenses">0</strong>
+                <small>د.ع</small>
+            </div>
+            <div class="card card-teal">
+                <span>📦 عدد المواد</span>
+                <strong id="productsCount">0</strong>
+                <small>مادة</small>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>📊 ملخص سريع</h3>
+            <div class="stats-row">
+                <div class="stat">
+                    <span>عدد الزبائن</span>
+                    <strong id="statCustomers">0</strong>
+                </div>
+                <div class="stat">
+                    <span>عدد المجهزين</span>
+                    <strong id="statSuppliers">0</strong>
+                </div>
+                <div class="stat">
+                    <span>عدد المبيعات</span>
+                    <strong id="statSales">0</strong>
+                </div>
+                <div class="stat">
+                    <span>عدد المشتريات</span>
+                    <strong id="statPurchases">0</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>🕒 آخر العمليات</h3>
+            <div id="recentTransactions"></div>
+        </div>
+
+    </section>
+
+
+    <!-- ============== المبيعات ============== -->
+    <section id="sales" class="page">
+
+        <h2>💰 المبيعات</h2>
+
+        <form id="saleForm" class="form">
+            <input type="text" id="saleCustomer" placeholder="اسم الزبون (اختياري)">
+            <input type="text" id="saleProduct" placeholder="اسم المادة" required list="productsDatalist" autocomplete="off">
+
+            <select id="saleUnit" onchange="updateSaleUnitHint()">
+                <option value="main">كارتونة كاملة</option>
+                <option value="small">طبقة (مفرد)</option>
+            </select>
+
+            <input type="number" id="saleQuantity" placeholder="الكمية" min="1" required>
+            <input type="number" id="salePrice" placeholder="سعر الوحدة" min="0" required>
+
+            <select id="salePayment" onchange="toggleSalePaid()">
+                <option value="cash">نقدًا</option>
+                <option value="debt">دين</option>
+                <option value="partial">دفع جزئي</option>
+            </select>
+
+            <input type="number" id="salePaid" placeholder="المبلغ المدفوع" min="0" style="display:none;">
+
+            <button type="submit">➕ إضافة البيع</button>
+        </form>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h3>📋 سجل المبيعات</h3>
+                <input type="text" id="salesSearch" class="search-input" placeholder="🔍 بحث..." oninput="renderSales()">
+            </div>
+            <div id="salesList"></div>
+        </div>
+
+    </section>
+
+
+    <!-- ============== المشتريات ============== -->
+    <section id="purchases" class="page">
+
+        <h2>🛒 المشتريات</h2>
+
+        <form id="purchaseForm" class="form">
+            <input type="text" id="purchaseSupplier" placeholder="اسم المجهز (اختياري)">
+            <input type="text" id="purchaseProduct" placeholder="اسم المادة" required list="productsDatalist" autocomplete="off">
+
+            <input type="number" id="purchaseQuantity" placeholder="عدد الكراتين" min="1" required>
+            <input type="number" id="purchasePrice" placeholder="سعر الكارتونة" min="0" required>
+
+            <select id="purchasePayment" onchange="togglePurchasePaid()">
+                <option value="cash">نقدًا</option>
+                <option value="debt">دين</option>
+                <option value="partial">دفع جزئي</option>
+            </select>
+
+            <input type="number" id="purchasePaid" placeholder="المبلغ المدفوع" min="0" style="display:none;">
+
+            <button type="submit">➕ إضافة الشراء</button>
+        </form>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h3>📋 سجل المشتريات</h3>
+                <input type="text" id="purchasesSearch" class="search-input" placeholder="🔍 بحث..." oninput="renderPurchases()">
+            </div>
+            <div id="purchasesList"></div>
+        </div>
+
+    </section>
+
+
+    <!-- ============== الزبائن ============== -->
+    <section id="customers" class="page">
+
+        <h2>👥 الزبائن</h2>
+
+        <form id="customerForm" class="form">
+            <input type="text" id="customerName" placeholder="اسم الزبون" required>
+            <input type="text" id="customerPhone" placeholder="رقم الهاتف">
+            <button type="submit">➕ إضافة زبون</button>
+        </form>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h3>📋 قائمة الزبائن</h3>
+                <input type="text" id="customersSearch" class="search-input" placeholder="🔍 بحث..." oninput="renderCustomers()">
+            </div>
+            <div id="customersList"></div>
+        </div>
+
+    </section>
+
+
+    <!-- ============== المجهزين ============== -->
+    <section id="suppliers" class="page">
+
+        <h2>🏪 المجهزين</h2>
+
+        <form id="supplierForm" class="form">
+            <input type="text" id="supplierName" placeholder="اسم المجهز" required>
+            <input type="text" id="supplierPhone" placeholder="رقم الهاتف">
+            <button type="submit">➕ إضافة مجهز</button>
+        </form>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h3>📋 قائمة المجهزين</h3>
+                <input type="text" id="suppliersSearch" class="search-input" placeholder="🔍 بحث..." oninput="renderSuppliers()">
+            </div>
+            <div id="suppliersList"></div>
+        </div>
+
+    </section>
+
+
+    <!-- ============== المخزون ============== -->
+    <section id="products" class="page">
+
+        <h2>📦 المخزون</h2>
+
+        <form id="productForm" class="form form-extended">
+            <input type="text" id="productName" placeholder="اسم المادة" required>
+
+            <label class="checkbox-label">
+                <input type="checkbox" id="productMulti" onchange="toggleProductMulti()">
+                <span>مادة متعددة الوحدات (كراتين + طبقات)</span>
+            </label>
+
+            <div class="multi-fields" id="multiFields" style="display:none;">
+                <input type="text" id="productUnitMain" placeholder="اسم الوحدة الكبيرة (كارتونة)" value="كارتونة">
+                <input type="text" id="productUnitSmall" placeholder="اسم الوحدة الصغيرة (طبقة)" value="طبقة">
+                <input type="number" id="productPerMain" placeholder="كم طبقة بالكارتونة" min="1" value="12">
+            </div>
+
+            <input type="number" id="productQuantity" placeholder="الكمية الابتدائية" min="0" value="0">
+
+            <div class="multi-fields" id="multiPrices" style="display:none;">
+                <input type="number" id="productBuyPriceMain" placeholder="سعر شراء الكارتونة" min="0">
+                <input type="number" id="productSellPriceMain" placeholder="سعر بيع الكارتونة" min="0">
+                <input type="number" id="productSellPriceSmall" placeholder="سعر بيع الطبقة" min="0">
+            </div>
+
+            <div class="single-fields" id="singleFields">
+                <input type="number" id="productBuyPrice" placeholder="سعر الشراء" min="0">
+                <input type="number" id="productSellPrice" placeholder="سعر البيع" min="0">
+            </div>
+
+            <button type="submit">➕ إضافة مادة</button>
+        </form>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h3>📋 قائمة المواد</h3>
+                <input type="text" id="productsSearch" class="search-input" placeholder="🔍 بحث..." oninput="renderProducts()">
+            </div>
+            <div id="productsList"></div>
+        </div>
+
+    </section>
+
+
+    <!-- ============== الديون ============== -->
+    <section id="debts" class="page">
+
+        <h2>📒 الديون</h2>
+
+        <div class="debt-box">
+            <h3>👤 ديون لنا (على الزبائن)</h3>
+            <div id="customerDebts"></div>
+        </div>
+
+        <div class="debt-box">
+            <h3>🏪 ديون علينا (للمجهزين)</h3>
+            <div id="supplierDebts"></div>
+        </div>
+
+    </section>
+
+
+    <!-- ============== المصاريف ============== -->
+    <section id="expenses" class="page">
+
+        <h2>💸 المصاريف</h2>
+
+        <form id="expenseForm" class="form">
+            <input type="text" id="expenseName" placeholder="نوع المصروف" required>
+            <input type="number" id="expenseAmount" placeholder="المبلغ" min="0" required>
+            <input type="text" id="expenseNote" placeholder="ملاحظات (اختياري)">
+            <button type="submit">➕ إضافة مصروف</button>
+        </form>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h3>📋 سجل المصاريف</h3>
+                <input type="text" id="expensesSearch" class="search-input" placeholder="🔍 بحث..." oninput="renderExpenses()">
+            </div>
+            <div id="expensesList"></div>
+        </div>
+
+    </section>
+
+
+    <!-- ============== الخزنة ============== -->
+    <section id="cashbox" class="page">
+
+        <h2>💵 الخزنة (الصندوق)</h2>
+
+        <div class="cards">
+            <div class="card card-green">
+                <span>💵 النقد الحالي</span>
+                <strong id="cashNow">0</strong>
+                <small>د.ع</small>
+            </div>
+            <div class="card card-blue">
+                <span>📥 إجمالي الداخل</span>
+                <strong id="cashIn">0</strong>
+                <small>د.ع</small>
+            </div>
+            <div class="card card-red">
+                <span>📤 إجمالي الخارج</span>
+                <strong id="cashOut">0</strong>
+                <small>د.ع</small>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h3>📋 حركات الخزنة</h3>
+                <input type="text" id="cashSearch" class="search-input" placeholder="🔍 بحث..." oninput="renderCashbox()">
+            </div>
+            <div id="cashboxList"></div>
+        </div>
+
+    </section>
+
+
+    <!-- ============== النسخ الاحتياطي ============== -->
+    <section id="backup" class="page">
+
+        <h2>💾 النسخ الاحتياطي</h2>
+
+        <div class="panel">
+            <h3>📤 تصدير البيانات</h3>
+            <p style="color:#64748b;margin-bottom:14px;">
+                ينزّل ملف JSON فيه كل بياناتك (زبائن، مبيعات، مشتريات، ديون، مخزون، مصاريف).
+                احفظه بمكان آمن.
+            </p>
+            <button class="big-btn" onclick="exportData()">📤 تنزيل نسخة احتياطية</button>
+        </div>
+
+        <div class="panel">
+            <h3>📥 استيراد البيانات</h3>
+            <p style="color:#64748b;margin-bottom:14px;">
+                ⚠️ تحذير: الاستيراد راح يستبدل كل البيانات الحالية.
+            </p>
+            <button class="big-btn danger" onclick="document.getElementById('importFile').click()">📥 اختيار ملف للاستيراد</button>
+        </div>
+
+        <div class="panel">
+            <h3>📊 معلومات البيانات</h3>
+            <div class="stats-row">
+                <div class="stat">
+                    <span>عدد الزبائن</span>
+                    <strong id="bkCustomers">0</strong>
+                </div>
+                <div class="stat">
+                    <span>عدد المبيعات</span>
+                    <strong id="bkSales">0</strong>
+                </div>
+                <div class="stat">
+                    <span>عدد المشتريات</span>
+                    <strong id="bkPurchases">0</strong>
+                </div>
+                <div class="stat">
+                    <span>عدد المواد</span>
+                    <strong id="bkProducts">0</strong>
+                </div>
+            </div>
+            <p style="color:#64748b;margin-top:14px;">
+                آخر حفظ: <strong id="bkLastSave">—</strong>
+            </p>
+        </div>
+
+        <div class="panel">
+            <h3>⚠️ منطقة الخطر</h3>
+            <p style="color:#64748b;margin-bottom:14px;">
+                حذف كل البيانات نهائياً — لا يمكن الرجوع بعدها.
+            </p>
+            <button class="big-btn danger" onclick="wipeAllData()">🗑️ حذف كل البيانات</button>
+        </div>
+
+    </section>
+
+</main>
+
+<datalist id="productsDatalist"></datalist>
+
+<script src="script.js"></script>
+
+</body>
+</html>
