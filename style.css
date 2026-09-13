@@ -815,3 +815,114 @@ h3 {
         display: none !important;
     }
 }
+/* ========== Inventory Summary ========== */
+.inventory-summary {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #bae6fd;
+}
+
+.inventory-summary h3 {
+    color: #0369a1;
+    margin-bottom: 14px;
+}
+
+.inventory-summary .stat {
+    background: white;
+    border-color: #bae6fd;
+}
+
+.inventory-summary .stat strong {
+    color: #0369a1;
+    font-size: 26px;
+}
+/* ========== Edit Modal ========== */
+.edit-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+}
+
+.edit-box {
+    background: white;
+    border-radius: 14px;
+    padding: 24px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.edit-box h3 {
+    text-align: center;
+    margin-bottom: 18px;
+    color: var(--text);
+}
+
+.edit-body label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: var(--text-light);
+    font-weight: 600;
+}
+
+.edit-body input,
+.edit-body select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    margin-bottom: 12px;
+    background: #f8fafc;
+}
+
+.edit-body input:focus,
+.edit-body select:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: white;
+}
+
+.edit-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.edit-actions button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.edit-save {
+    background: var(--success);
+    color: white;
+}
+
+.edit-save:hover {
+    background: #15803d;
+}
+
+.edit-cancel {
+    background: #f1f5f9;
+    color: var(--text);
+}
+
+.edit-cancel:hover {
+    background: #e2e8f0;
+}
