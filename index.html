@@ -19,7 +19,7 @@
             <button class="header-btn" onclick="quickBackup()" title="نسخة احتياطية سريعة">💾</button>
             <button class="header-btn" onclick="exportData()" title="تصدير البيانات">📤</button>
             <button class="header-btn" onclick="document.getElementById('importFile').click()" title="استيراد البيانات">📥</button>
-            <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
+            <input type="file" id="importFile" accept=".json,.html" style="display:none;" onchange="importData(event)">
         </div>
     </div>
 </header>
@@ -229,6 +229,28 @@
 
         <h2>📦 المخزون</h2>
 
+        <div class="panel inventory-summary">
+            <h3>📊 المجموع الكلي للمخزون</h3>
+            <div class="stats-row">
+                <div class="stat">
+                    <span>📦 إجمالي الكراتين الكاملة</span>
+                    <strong id="invTotalMains">0</strong>
+                </div>
+                <div class="stat">
+                    <span>🥚 إجمالي الفرط (طبقات)</span>
+                    <strong id="invTotalSmalls">0</strong>
+                </div>
+                <div class="stat">
+                    <span>📋 وحدات أخرى</span>
+                    <strong id="invTotalOthers">0</strong>
+                </div>
+                <div class="stat">
+                    <span>🏷️ عدد المواد</span>
+                    <strong id="invTotalProducts">0</strong>
+                </div>
+            </div>
+        </div>
+
         <form id="productForm" class="form form-extended">
             <input type="text" id="productName" placeholder="اسم المادة" required>
 
@@ -353,8 +375,7 @@
         <div class="panel">
             <h3>📤 تصدير البيانات</h3>
             <p style="color:#64748b;margin-bottom:14px;">
-                ينزّل ملف JSON فيه كل بياناتك (زبائن، مبيعات، مشتريات، ديون، مخزون، مصاريف).
-                احفظه بمكان آمن.
+                ينزّل ملف HTML مرتب فيه كل بياناتك. يفتح بأي متصفح ويمكن طباعته.
             </p>
             <button class="big-btn" onclick="exportData()">📤 تنزيل نسخة احتياطية</button>
         </div>
@@ -404,9 +425,21 @@
 
 </main>
 
+<!-- ============== نافذة التعديل ============== -->
+<div id="editModal" class="edit-modal" style="display:none;">
+    <div class="edit-box">
+        <h3 id="editTitle">تعديل</h3>
+        <div id="editBody" class="edit-body"></div>
+        <div class="edit-actions">
+            <button class="edit-save" onclick="saveEdit()">💾 حفظ</button>
+            <button class="edit-cancel" onclick="closeEdit()">إلغاء</button>
+        </div>
+    </div>
+</div>
+
 <datalist id="productsDatalist"></datalist>
 
 <script src="script.js"></script>
 
 </body>
-</html>
+</html>>
