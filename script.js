@@ -134,7 +134,6 @@ function addMain(p, qtyMain) {
     p.stockSmall = (Number(p.stockSmall) || 0) + (qtyMain * perMain);
 }
 
-// دالة ترجيع المخزون (للحذف/التعديل)
 function restoreStock(p, unit, quantity) {
     if (!p) return;
     if (p.multi) {
@@ -149,7 +148,6 @@ function restoreStock(p, unit, quantity) {
     }
 }
 
-// دالة سحب المخزون (للتعديل)
 function removeStockForEdit(p, unit, quantity) {
     if (!p) return { ok: true };
     if (p.multi) {
@@ -162,6 +160,38 @@ function removeStockForEdit(p, unit, quantity) {
         p.quantity -= quantity;
         return { ok: true };
     }
+}
+
+// ============================================================
+// حساب المجموع الكلي للمخزون (دالة مستقلة)
+// ============================================================
+
+function renderInventorySummary() {
+    let totalMains = 0;
+    let totalSmalls = 0;
+    let totalOthers = 0;
+
+    data.products.forEach(p => {
+        if (p.multi) {
+            const parts = productStockParts(p);
+            if (parts) {
+                totalMains += parts.mains;
+                totalSmalls += parts.small;
+            }
+        } else {
+            totalOthers += Number(p.quantity) || 0;
+        }
+    });
+
+    const setText = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = money(val);
+    };
+
+    setText("invTotalMains", totalMains);
+    setText("invTotalSmalls", totalSmalls);
+    setText("invTotalOthers", totalOthers);
+    setText("invTotalProducts", data.products.length);
 }
 
 // ============================================================
@@ -489,6 +519,7 @@ document.getElementById("expenseForm").addEventListener("submit", function (e) {
     renderAll();
     alert("✅ تمت إضافة المصروف");
 });
+
 // ============================================================
 // الحذف الذكي
 // ============================================================
@@ -519,12 +550,10 @@ function deleteSale(id) {
 
     if (!confirm(msg)) return;
 
-    // إرجاع المخزون
     if (product) {
         restoreStock(product, sale.unit, sale.quantity);
     }
 
-    // تقليل دين الزبون
     if (sale.debt > 0 && sale.customer && sale.customer !== "زبون نقدي") {
         const c = data.customers.find(
             x => x.name.toLowerCase() === sale.customer.toLowerCase()
@@ -534,7 +563,6 @@ function deleteSale(id) {
         }
     }
 
-    // حذف البيعة
     data.sales = data.sales.filter(s => s.id !== id);
     saveData();
     renderAll();
@@ -567,7 +595,6 @@ function deletePurchase(id) {
 
     if (!confirm(msg)) return;
 
-    // سحب المخزون
     if (product) {
         if (product.multi) {
             if (purchase.unit === "main") {
@@ -584,7 +611,6 @@ function deletePurchase(id) {
         }
     }
 
-    // تقليل دين المجهز
     if (purchase.debt > 0 && purchase.supplier && purchase.supplier !== "مجهز غير محدد") {
         const s = data.suppliers.find(
             x => x.name.toLowerCase() === purchase.supplier.toLowerCase()
@@ -611,7 +637,6 @@ function deleteCustomer(id) {
     const c = data.customers.find(x => x.id === id);
     if (!c) return;
 
-    // البحث عن عمليات مرتبطة
     const sales = data.sales.filter(
         s => (s.customer || "").toLowerCase() === c.name.toLowerCase()
     );
@@ -628,7 +653,6 @@ function deleteCustomer(id) {
         if (c.debt > 0) msg += `• دين: ${money(c.debt)} د.ع\n`;
         msg += `\n`;
 
-        // نسأل: هل نرجع المخزون والدين؟
         if (sales.length) {
             const restore = confirm(
                 msg +
@@ -650,17 +674,14 @@ function deleteCustomer(id) {
         if (!confirm(msg + `حذف "${c.name}"؟`)) return;
     }
 
-    // حذف المبيعات المرتبطة
     data.sales = data.sales.filter(
         s => (s.customer || "").toLowerCase() !== c.name.toLowerCase()
     );
 
-    // حذف التسديدات المرتبطة
     data.payments = data.payments.filter(
         p => !(p.type === "customer" && p.person === c.name)
     );
 
-    // حذف الزبون
     data.customers = data.customers.filter(x => x.id !== id);
     saveData();
     renderAll();
@@ -771,7 +792,6 @@ function deleteProduct(id) {
         if (!confirm(msg + `حذف "${p.name}"؟`)) return;
     }
 
-    // تقليل ديون الزبائن والمجهزين المرتبطين
     sales.forEach(s => {
         if (s.debt > 0 && s.customer && s.customer !== "زبون نقدي") {
             const c = data.customers.find(
@@ -1015,16 +1035,12 @@ function saveEdit() {
             p => p.name.toLowerCase() === s.product.toLowerCase()
         );
 
-        // إرجاع المخزون القديم
         if (product) restoreStock(product, s.unit, s.quantity);
 
-        // سحب المخزون الجديد
         if (product) {
             const r = removeStockForEdit(product, newUnit, newQty);
             if (!r.ok) {
-                // إذا فشل، نرجع القديم
-                if (product) restoreStock(product, newUnit, newQty);
-                if (product) restoreStock(product, s.unit, 0); // لا شي
+                if (product) restoreStock(product, s.unit, 0);
                 alert(r.message);
                 return;
             }
@@ -1042,7 +1058,6 @@ function saveEdit() {
         }
         const newDebt = newTotal - newActualPaid;
 
-        // تعديل دين الزبون القديم
         if (s.debt > 0 && s.customer && s.customer !== "زبون نقدي") {
             const oldC = data.customers.find(
                 x => x.name.toLowerCase() === s.customer.toLowerCase()
@@ -1050,7 +1065,6 @@ function saveEdit() {
             if (oldC) oldC.debt = Math.max(0, oldC.debt - s.debt);
         }
 
-        // تعديل دين الزبون الجديد
         if (newDebt > 0 && newCustomer && newCustomer !== "زبون نقدي") {
             let nc = data.customers.find(
                 x => x.name.toLowerCase() === newCustomer.toLowerCase()
@@ -1099,7 +1113,6 @@ function saveEdit() {
             x => x.name.toLowerCase() === p.product.toLowerCase()
         );
 
-        // سحب المخزون القديم
         if (product) {
             if (product.multi) {
                 const perMain = Number(product.perMain) || 12;
@@ -1115,7 +1128,6 @@ function saveEdit() {
                     (Number(product.quantity) || 0) - p.quantity);
             }
 
-            // إضافة الجديد
             if (product.multi) {
                 addMain(product, newQty);
             } else {
@@ -1135,7 +1147,6 @@ function saveEdit() {
         }
         const newDebt = newTotal - newActualPaid;
 
-        // تعديل دين المجهز القديم
         if (p.debt > 0 && p.supplier && p.supplier !== "مجهز غير محدد") {
             const oldS = data.suppliers.find(
                 x => x.name.toLowerCase() === p.supplier.toLowerCase()
@@ -1143,7 +1154,6 @@ function saveEdit() {
             if (oldS) oldS.debt = Math.max(0, oldS.debt - p.debt);
         }
 
-        // تعديل دين المجهز الجديد
         if (newDebt > 0 && newSupplier && newSupplier !== "مجهز غير محدد") {
             let ns = data.suppliers.find(
                 x => x.name.toLowerCase() === newSupplier.toLowerCase()
@@ -1204,7 +1214,6 @@ function saveEdit() {
 
         const oldName = c.name;
 
-        // تعديل العمليات المرتبطة
         if (oldName !== newName) {
             data.sales.forEach(s => {
                 if ((s.customer || "").toLowerCase() === oldName.toLowerCase()) {
@@ -1307,6 +1316,7 @@ function saveEdit() {
         alert("✅ تم تعديل المادة");
     }
 }
+
 // ============================================================
 // عرض الزبائن
 // ============================================================
@@ -1689,7 +1699,7 @@ function renderDashboard() {
 }
 
 // ============================================================
-// تسديد دين زبون / مجهز
+// تسديد دين
 // ============================================================
 
 function payCustomer(id) {
@@ -1743,7 +1753,7 @@ function paySupplier(id) {
 }
 
 // ============================================================
-// 💵 الخزنة (Cashbox)
+// الخزنة
 // ============================================================
 
 function buildCashMovements() {
@@ -1874,7 +1884,7 @@ function renderCashbox() {
 }
 
 // ============================================================
-// 🖨️ طباعة الفاتورة
+// طباعة الفاتورة
 // ============================================================
 
 function printSaleInvoice(saleId) {
@@ -1950,7 +1960,7 @@ function closeInvoice() {
 }
 
 // ============================================================
-// 📒 كشف حساب
+// كشف حساب
 // ============================================================
 
 function showCustomerHistory(customerId) {
@@ -2140,42 +2150,254 @@ function showSupplierHistory(supplierId) {
 }
 
 // ============================================================
-// 💾 النسخة الاحتياطية (مرتبة)
+// النسخة الاحتياطية (HTML)
 // ============================================================
 
 function exportData() {
     const now = new Date();
-    const dateStr = now.toLocaleDateString("ar-IQ");
+    const dateStr = now.toLocaleDateString("ar-IQ", {
+        weekday: "long", year: "numeric", month: "long", day: "numeric"
+    });
     const timeStr = now.toLocaleTimeString("ar-IQ");
 
-    // ملخص مرتب
-    const summary = {
-        "عدد الزبائن": data.customers.length,
-        "عدد المجهزين": data.suppliers.length,
-        "عدد المواد": data.products.length,
-        "عدد المبيعات": data.sales.length,
-        "عدد المشتريات": data.purchases.length,
-        "عدد المصاريف": data.expenses.length,
-        "عدد التسديدات": data.payments.length,
-        "إجمالي ديون الزبائن": data.customers.reduce((s, c) => s + c.debt, 0),
-        "إجمالي ديون المجهزين": data.suppliers.reduce((s, c) => s + c.debt, 0)
-    };
+    let html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>حساباتي — نسخة احتياطية</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+        background: #f1f5f9;
+        color: #1e293b;
+        line-height: 1.7;
+        padding: 20px;
+    }
+    .container { max-width: 1000px; margin: auto; }
+    .header {
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 16px;
+        margin-bottom: 24px;
+        text-align: center;
+    }
+    .header h1 { font-size: 28px; margin-bottom: 8px; }
+    .header .meta { color: #cbd5e1; font-size: 14px; margin-top: 6px; }
+    .section {
+        background: white;
+        border-radius: 14px;
+        padding: 20px;
+        margin-bottom: 18px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+    .section h2 {
+        color: #1e293b;
+        font-size: 20px;
+        margin-bottom: 16px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
+    }
+    .stat {
+        background: #f8fafc;
+        padding: 16px;
+        border-radius: 10px;
+        text-align: center;
+        border: 1px solid #e2e8f0;
+    }
+    .stat span { display: block; font-size: 13px; color: #64748b; margin-bottom: 6px; }
+    .stat strong { font-size: 22px; color: #2563eb; }
+    .card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 10px;
+    }
+    .card-title { font-weight: 700; margin-bottom: 6px; font-size: 15px; }
+    .card-details { color: #64748b; font-size: 13px; line-height: 1.9; }
+    .card-details strong { color: #1e293b; }
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-left: 4px;
+    }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-orange { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .empty {
+        text-align: center;
+        color: #94a3b8;
+        padding: 20px;
+        font-style: italic;
+    }
+    .footer {
+        text-align: center;
+        color: #64748b;
+        font-size: 13px;
+        margin-top: 30px;
+        padding: 20px;
+    }
+    @media print {
+        body { background: white; padding: 0; }
+        .section { box-shadow: none; page-break-inside: avoid; }
+    }
+</style>
+</head>
+<body>
+<div class="container">
 
-    const backup = {
-        "🏪 اسم البرنامج": "حساباتي — إدارة المبيعات والديون",
-        "📅 تاريخ التصدير": dateStr,
-        "⏰ وقت التصدير": timeStr,
-        "📦 إصدار الملف": "2.0",
-        "📊 ملخص": summary,
-        "────────────────────": "البيانات الكاملة أدناه",
-        "بيانات": data
-    };
+<div class="header">
+    <h1>🏪 حساباتي — نسخة احتياطية</h1>
+    <div class="meta">📅 ${dateStr}</div>
+    <div class="meta">⏰ ${timeStr}</div>
+</div>
 
-    const json = JSON.stringify(backup, null, 4);
-    const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+<div class="section">
+    <h2>📊 الملخص العام</h2>
+    <div class="stats">
+        <div class="stat"><span>👥 الزبائن</span><strong>${data.customers.length}</strong></div>
+        <div class="stat"><span>🏪 المجهزين</span><strong>${data.suppliers.length}</strong></div>
+        <div class="stat"><span>📦 المواد</span><strong>${data.products.length}</strong></div>
+        <div class="stat"><span>💰 المبيعات</span><strong>${data.sales.length}</strong></div>
+        <div class="stat"><span>🛒 المشتريات</span><strong>${data.purchases.length}</strong></div>
+        <div class="stat"><span>💸 المصاريف</span><strong>${data.expenses.length}</strong></div>
+        <div class="stat"><span>👤 ديون لنا</span><strong>${money(data.customers.reduce((s,c)=>s+c.debt,0))}</strong></div>
+        <div class="stat"><span>🏪 ديون علينا</span><strong>${money(data.suppliers.reduce((s,c)=>s+c.debt,0))}</strong></div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>👥 الزبائن (${data.customers.length})</h2>
+    ${data.customers.length ? data.customers.map(c => `
+        <div class="card">
+            <div class="card-title">${escapeHTML(c.name)}</div>
+            <div class="card-details">
+                ${c.phone ? "📞 " + escapeHTML(c.phone) + "<br>" : ""}
+                الدين: <strong>${money(c.debt)} د.ع</strong>
+            </div>
+        </div>
+    `).join("") : `<div class="empty">لا يوجد زبائن</div>`}
+</div>
+
+<div class="section">
+    <h2>🏪 المجهزين (${data.suppliers.length})</h2>
+    ${data.suppliers.length ? data.suppliers.map(s => `
+        <div class="card">
+            <div class="card-title">${escapeHTML(s.name)}</div>
+            <div class="card-details">
+                ${s.phone ? "📞 " + escapeHTML(s.phone) + "<br>" : ""}
+                علينا: <strong>${money(s.debt)} د.ع</strong>
+            </div>
+        </div>
+    `).join("") : `<div class="empty">لا يوجد مجهزين</div>`}
+</div>
+
+<div class="section">
+    <h2>📦 المواد (${data.products.length})</h2>
+    ${data.products.length ? data.products.map(p => {
+        let stockText = "";
+        if (p.multi) {
+            const { mains, small } = productStockParts(p);
+            stockText = `<span class="badge badge-blue">${mains} ${escapeHTML(p.unitMain || "كارتونة")}</span>`;
+            if (small > 0) {
+                stockText += ` <span class="badge badge-orange">فرط: ${small} ${escapeHTML(p.unitSmall || "طبقة")}</span>`;
+            }
+        } else {
+            stockText = `<span class="badge badge-blue">${money(p.quantity)} وحدة</span>`;
+        }
+        return `
+            <div class="card">
+                <div class="card-title">${escapeHTML(p.name)}</div>
+                <div class="card-details">
+                    المخزون: ${stockText}<br>
+                    ${p.multi
+                        ? `شراء الكارتونة: <strong>${money(p.buyPriceMain)} د.ع</strong><br>
+                           بيع الكارتونة: <strong>${money(p.sellPriceMain)} د.ع</strong><br>
+                           بيع الطبقة: <strong>${money(p.sellPriceSmall)} د.ع</strong>`
+                        : `شراء: <strong>${money(p.buyPrice)} د.ع</strong> — بيع: <strong>${money(p.sellPrice)} د.ع</strong>`
+                    }
+                </div>
+            </div>
+        `;
+    }).join("") : `<div class="empty">لا توجد مواد</div>`}
+</div>
+
+<div class="section">
+    <h2>💰 المبيعات (${data.sales.length})</h2>
+    ${data.sales.length ? [...data.sales].reverse().map(s => `
+        <div class="card">
+            <div class="card-title">${escapeHTML(s.product)}</div>
+            <div class="card-details">
+                الزبون: <strong>${escapeHTML(s.customer)}</strong><br>
+                ${s.quantity} ${escapeHTML(s.unitLabel || "وحدة")} × ${money(s.price)}
+                = <strong>${money(s.total)} د.ع</strong><br>
+                المدفوع: ${money(s.paid)} د.ع
+                ${s.debt > 0 ? ` — <span class="badge badge-red">دين: ${money(s.debt)} د.ع</span>` : ""}
+                <br>📅 ${s.date}
+            </div>
+        </div>
+    `).join("") : `<div class="empty">لا توجد مبيعات</div>`}
+</div>
+
+<div class="section">
+    <h2>🛒 المشتريات (${data.purchases.length})</h2>
+    ${data.purchases.length ? [...data.purchases].reverse().map(p => `
+        <div class="card">
+            <div class="card-title">${escapeHTML(p.product)}</div>
+            <div class="card-details">
+                المجهز: <strong>${escapeHTML(p.supplier)}</strong><br>
+                ${p.quantity} ${escapeHTML(p.unitLabel || "وحدة")} × ${money(p.price)}
+                = <strong>${money(p.total)} د.ع</strong><br>
+                المدفوع: ${money(p.paid)} د.ع
+                ${p.debt > 0 ? ` — <span class="badge badge-red">علينا: ${money(p.debt)} د.ع</span>` : ""}
+                <br>📅 ${p.date}
+            </div>
+        </div>
+    `).join("") : `<div class="empty">لا توجد مشتريات</div>`}
+</div>
+
+<div class="section">
+    <h2>💸 المصاريف (${data.expenses.length})</h2>
+    ${data.expenses.length ? [...data.expenses].reverse().map(e => `
+        <div class="card">
+            <div class="card-title">${escapeHTML(e.name)}</div>
+            <div class="card-details">
+                المبلغ: <strong>${money(e.amount)} د.ع</strong>
+                ${e.note ? "<br>" + escapeHTML(e.note) : ""}
+                <br>📅 ${e.date}
+            </div>
+        </div>
+    `).join("") : `<div class="empty">لا توجد مصاريف</div>`}
+</div>
+
+<div class="footer">
+    © حساباتي — تم إنشاء هذه النسخة بتاريخ ${dateStr} الساعة ${timeStr}
+</div>
+
+</div>
+
+<script type="application/json" id="backupData">
+${JSON.stringify(data).replace(/</g, "\\u003c")}
+</script>
+
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
 
-    // اسم ملف مرتب
     const y = now.getFullYear();
     const m = String(now.getMonth() + 1).padStart(2, "0");
     const d = String(now.getDate()).padStart(2, "0");
@@ -2184,7 +2406,7 @@ function exportData() {
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = `حساباتي-${y}-${m}-${d}-${h}${mi}.json`;
+    a.download = `حساباتي-${y}-${m}-${d}-${h}${mi}.html`;
     a.click();
 
     URL.revokeObjectURL(url);
@@ -2203,10 +2425,20 @@ function importData(event) {
     const reader = new FileReader();
     reader.onload = function (e) {
         try {
-            const parsed = JSON.parse(e.target.result);
-            const importedData = parsed["بيانات"] || parsed.data || parsed;
+            const content = e.target.result;
+            let importedData = null;
 
-            if (!importedData.customers && !importedData.sales) {
+            if (content.includes('id="backupData"')) {
+                const match = content.match(/<script type="application\/json" id="backupData">([\s\S]*?)<\/script>/);
+                if (match) {
+                    importedData = JSON.parse(match[1]);
+                }
+            } else {
+                const parsed = JSON.parse(content);
+                importedData = parsed["بيانات"] || parsed.data || parsed;
+            }
+
+            if (!importedData || (!importedData.customers && !importedData.sales)) {
                 alert("❌ ملف غير صالح");
                 return;
             }
@@ -2279,6 +2511,7 @@ function renderAll() {
     renderCustomers();
     renderSuppliers();
     renderProducts();
+    renderInventorySummary();
     renderSales();
     renderPurchases();
     renderExpenses();
