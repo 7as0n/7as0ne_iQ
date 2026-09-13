@@ -31,7 +31,6 @@ function saveData() {
     localStorage.setItem("accountingData_v2", JSON.stringify(data));
 }
 
-
 // ============================================================
 // أدوات مساعدة
 // ============================================================
@@ -62,7 +61,6 @@ document.getElementById("headerDate").textContent =
         weekday: "long", year: "numeric", month: "long", day: "numeric"
     });
 
-
 // ============================================================
 // التنقل بين الصفحات
 // ============================================================
@@ -70,13 +68,10 @@ document.getElementById("headerDate").textContent =
 function showPage(pageId, button) {
     document.querySelectorAll(".page").forEach(p => p.classList.remove("active-page"));
     document.getElementById(pageId).classList.add("active-page");
-
     document.querySelectorAll(".menu button").forEach(b => b.classList.remove("active"));
     if (button) button.classList.add("active");
-
     renderAll();
 }
-
 
 // ============================================================
 // نظام المخزون (كراتين + طبقات)
@@ -98,11 +93,9 @@ function formatStock(p) {
     const { mains, small, perMain } = productStockParts(p);
     const mainName = p.unitMain || "كارتونة";
     const smallName = p.unitSmall || "طبقة";
-
     if (mains === 0 && small === 0) {
         return `<span class="stock-badge danger">نافذ</span>`;
     }
-
     let html = "";
     if (mains > 0) {
         html += `<span class="stock-badge">${mains} ${escapeHTML(mainName)} كاملة</span> `;
@@ -126,7 +119,6 @@ function deductMain(p, qtyMain) {
     const perMain = Number(p.perMain) || 12;
     const { mains, small, total } = productStockParts(p);
     if (qtyMain <= 0) return { ok: false, message: "كمية غير صحيحة" };
-
     if (qtyMain > mains) {
         return {
             ok: false,
@@ -142,6 +134,35 @@ function addMain(p, qtyMain) {
     p.stockSmall = (Number(p.stockSmall) || 0) + (qtyMain * perMain);
 }
 
+// دالة ترجيع المخزون (للحذف/التعديل)
+function restoreStock(p, unit, quantity) {
+    if (!p) return;
+    if (p.multi) {
+        if (unit === "main") {
+            const perMain = Number(p.perMain) || 12;
+            p.stockSmall = (Number(p.stockSmall) || 0) + (quantity * perMain);
+        } else {
+            p.stockSmall = (Number(p.stockSmall) || 0) + quantity;
+        }
+    } else {
+        p.quantity = (Number(p.quantity) || 0) + quantity;
+    }
+}
+
+// دالة سحب المخزون (للتعديل)
+function removeStockForEdit(p, unit, quantity) {
+    if (!p) return { ok: true };
+    if (p.multi) {
+        if (unit === "main") return deductMain(p, quantity);
+        return deductSmall(p, quantity);
+    } else {
+        if (Number(p.quantity) < quantity) {
+            return { ok: false, message: "الكمية غير كافية في المخزون" };
+        }
+        p.quantity -= quantity;
+        return { ok: true };
+    }
+}
 
 // ============================================================
 // فورم الزبون
@@ -152,19 +173,16 @@ document.getElementById("customerForm").addEventListener("submit", function (e) 
     const name = document.getElementById("customerName").value.trim();
     const phone = document.getElementById("customerPhone").value.trim();
     if (!name) return;
-
     if (data.customers.find(c => c.name.toLowerCase() === name.toLowerCase())) {
         alert("الزبون موجود مسبقاً");
         return;
     }
-
     data.customers.push({ id: uid(), name, phone, debt: 0 });
     saveData();
     this.reset();
     renderAll();
     alert("✅ تمت إضافة الزبون");
 });
-
 
 // ============================================================
 // فورم المجهز
@@ -175,19 +193,16 @@ document.getElementById("supplierForm").addEventListener("submit", function (e) 
     const name = document.getElementById("supplierName").value.trim();
     const phone = document.getElementById("supplierPhone").value.trim();
     if (!name) return;
-
     if (data.suppliers.find(s => s.name.toLowerCase() === name.toLowerCase())) {
         alert("المجهز موجود مسبقاً");
         return;
     }
-
     data.suppliers.push({ id: uid(), name, phone, debt: 0 });
     saveData();
     this.reset();
     renderAll();
     alert("✅ تمت إضافة المجهز");
 });
-
 
 // ============================================================
 // فورم المادة
@@ -204,7 +219,6 @@ function toggleProductMulti() {
 
 document.getElementById("productForm").addEventListener("submit", function (e) {
     e.preventDefault();
-
     const name = document.getElementById("productName").value.trim();
     const isMulti = document.getElementById("productMulti").checked;
     if (!name) return;
@@ -218,7 +232,6 @@ document.getElementById("productForm").addEventListener("submit", function (e) {
         const unitSmall = document.getElementById("productUnitSmall").value.trim() || "طبقة";
         const perMain = Number(document.getElementById("productPerMain").value) || 12;
         const qty = Number(document.getElementById("productQuantity").value) || 0;
-
         const buyPriceMain = Number(document.getElementById("productBuyPriceMain").value) || 0;
         const sellPriceMain = Number(document.getElementById("productSellPriceMain").value) || 0;
         const sellPriceSmall = Number(document.getElementById("productSellPriceSmall").value) || 0;
@@ -234,16 +247,10 @@ document.getElementById("productForm").addEventListener("submit", function (e) {
             existing.sellPriceSmall = sellPriceSmall;
         } else {
             data.products.push({
-                id: uid(),
-                name,
-                multi: true,
-                unitMain,
-                unitSmall,
-                perMain,
+                id: uid(), name, multi: true,
+                unitMain, unitSmall, perMain,
                 stockSmall: qty,
-                buyPriceMain,
-                sellPriceMain,
-                sellPriceSmall
+                buyPriceMain, sellPriceMain, sellPriceSmall
             });
         }
     } else {
@@ -258,12 +265,8 @@ document.getElementById("productForm").addEventListener("submit", function (e) {
             existing.sellPrice = sellPrice;
         } else {
             data.products.push({
-                id: uid(),
-                name,
-                multi: false,
-                quantity: qty,
-                buyPrice,
-                sellPrice
+                id: uid(), name, multi: false,
+                quantity: qty, buyPrice, sellPrice
             });
         }
     }
@@ -274,7 +277,6 @@ document.getElementById("productForm").addEventListener("submit", function (e) {
     renderAll();
     alert("✅ تمت إضافة المادة");
 });
-
 
 // ============================================================
 // فورم البيع
@@ -290,15 +292,9 @@ function updateSaleUnitHint() {
     const unit = document.getElementById("saleUnit").value;
     const priceInput = document.getElementById("salePrice");
     const p = data.products.find(x => x.name.toLowerCase() === productName.toLowerCase());
-
     if (!p) return;
-
     if (p.multi) {
-        if (unit === "main") {
-            priceInput.value = p.sellPriceMain || 0;
-        } else {
-            priceInput.value = p.sellPriceSmall || 0;
-        }
+        priceInput.value = unit === "main" ? (p.sellPriceMain || 0) : (p.sellPriceSmall || 0);
     } else {
         priceInput.value = p.sellPrice || 0;
     }
@@ -325,14 +321,12 @@ document.getElementById("saleForm").addEventListener("submit", function (e) {
     const product = data.products.find(
         p => p.name.toLowerCase() === productName.toLowerCase()
     );
-
     if (!product) {
         alert("المادة غير موجودة في المخزون");
         return;
     }
 
     const total = quantity * price;
-
     let actualPaid = total;
     if (payment === "debt") actualPaid = 0;
     if (payment === "partial") {
@@ -342,7 +336,6 @@ document.getElementById("saleForm").addEventListener("submit", function (e) {
         }
         actualPaid = paid;
     }
-
     const debt = total - actualPaid;
 
     if (product.multi) {
@@ -369,14 +362,8 @@ document.getElementById("saleForm").addEventListener("submit", function (e) {
         id: uid(),
         customer: customerName || "زبون نقدي",
         product: productName,
-        unit,
-        unitLabel,
-        quantity,
-        price,
-        total,
-        paid: actualPaid,
-        debt,
-        payment,
+        unit, unitLabel, quantity, price, total,
+        paid: actualPaid, debt, payment,
         date: today()
     });
 
@@ -397,7 +384,6 @@ document.getElementById("saleForm").addEventListener("submit", function (e) {
     renderAll();
     alert("✅ تم تسجيل البيع");
 });
-
 
 // ============================================================
 // فورم الشراء
@@ -424,7 +410,6 @@ document.getElementById("purchaseForm").addEventListener("submit", function (e) 
     }
 
     const total = quantity * price;
-
     let actualPaid = total;
     if (payment === "debt") actualPaid = 0;
     if (payment === "partial") {
@@ -434,7 +419,6 @@ document.getElementById("purchaseForm").addEventListener("submit", function (e) 
         }
         actualPaid = paid;
     }
-
     const debt = total - actualPaid;
 
     let product = data.products.find(
@@ -443,16 +427,10 @@ document.getElementById("purchaseForm").addEventListener("submit", function (e) 
 
     if (!product) {
         product = {
-            id: uid(),
-            name: productName,
-            multi: true,
-            unitMain: "كارتونة",
-            unitSmall: "طبقة",
-            perMain: 12,
-            stockSmall: 0,
-            buyPriceMain: price,
-            sellPriceMain: 0,
-            sellPriceSmall: 0
+            id: uid(), name: productName, multi: true,
+            unitMain: "كارتونة", unitSmall: "طبقة", perMain: 12,
+            stockSmall: 0, buyPriceMain: price,
+            sellPriceMain: 0, sellPriceSmall: 0
         };
         data.products.push(product);
     }
@@ -471,12 +449,8 @@ document.getElementById("purchaseForm").addEventListener("submit", function (e) 
         product: productName,
         unit: product.multi ? "main" : "unit",
         unitLabel: product.multi ? (product.unitMain || "كارتونة") : "وحدة",
-        quantity,
-        price,
-        total,
-        paid: actualPaid,
-        debt,
-        payment,
+        quantity, price, total,
+        paid: actualPaid, debt, payment,
         date: today()
     });
 
@@ -498,7 +472,6 @@ document.getElementById("purchaseForm").addEventListener("submit", function (e) 
     alert("✅ تم تسجيل الشراء");
 });
 
-
 // ============================================================
 // فورم المصاريف
 // ============================================================
@@ -508,11 +481,7 @@ document.getElementById("expenseForm").addEventListener("submit", function (e) {
     const name = document.getElementById("expenseName").value.trim();
     const amount = Number(document.getElementById("expenseAmount").value);
     const note = document.getElementById("expenseNote").value.trim();
-
-    if (!name || amount <= 0) {
-        alert("تأكد من البيانات");
-        return;
-    }
+    if (!name || amount <= 0) { alert("تأكد من البيانات"); return; }
 
     data.expenses.push({ id: uid(), name, amount, note, date: today() });
     saveData();
@@ -520,80 +489,824 @@ document.getElementById("expenseForm").addEventListener("submit", function (e) {
     renderAll();
     alert("✅ تمت إضافة المصروف");
 });
-
-
 // ============================================================
-// الحذف
+// الحذف الذكي
 // ============================================================
 
-function deleteItem(type, id) {
-    if (!confirm("هل أنت متأكد من الحذف؟")) return;
-    data[type] = data[type].filter(item => item.id !== id);
-    saveData();
-    renderAll();
-}
+function deleteSale(id) {
+    const sale = data.sales.find(s => s.id === id);
+    if (!sale) return;
 
+    const product = data.products.find(
+        p => p.name.toLowerCase() === sale.product.toLowerCase()
+    );
 
-// ============================================================
-// تسديد دين زبون
-// ============================================================
+    let msg = `⚠️ سيتم حذف هذه البيعة:\n\n`;
+    msg += `📦 المادة: ${sale.product}\n`;
+    msg += `🔢 الكمية: ${sale.quantity} ${sale.unitLabel || "وحدة"}\n`;
+    msg += `💰 المجموع: ${money(sale.total)} د.ع\n\n`;
+    msg += `سيتم إرجاع:\n`;
+    if (product) {
+        msg += `✅ ${sale.quantity} ${sale.unitLabel || "وحدة"} إلى المخزون\n`;
+    }
+    if (sale.debt > 0 && sale.customer && sale.customer !== "زبون نقدي") {
+        msg += `✅ تقليل دين ${sale.customer} بـ ${money(sale.debt)} د.ع\n`;
+    }
+    if (sale.paid > 0) {
+        msg += `✅ خصم ${money(sale.paid)} د.ع من الخزنة\n`;
+    }
+    msg += `\nمتأكد؟`;
 
-function payCustomer(id) {
-    const customer = data.customers.find(c => c.id === id);
-    if (!customer || customer.debt <= 0) return;
+    if (!confirm(msg)) return;
 
-    const amount = Number(prompt(
-        `الزبون: ${customer.name}\nالدين الحالي: ${money(customer.debt)} د.ع\n\nكم دفع؟`
-    ));
-
-    if (!amount || amount <= 0) return;
-    if (amount > customer.debt) {
-        alert("المبلغ أكبر من الدين");
-        return;
+    // إرجاع المخزون
+    if (product) {
+        restoreStock(product, sale.unit, sale.quantity);
     }
 
-    customer.debt -= amount;
-    data.payments.push({
-        id: uid(), type: "customer",
-        person: customer.name, amount, date: today()
-    });
-
-    saveData();
-    renderAll();
-    alert("✅ تم تسجيل التسديد");
-}
-
-
-// ============================================================
-// تسديد دين مجهز
-// ============================================================
-
-function paySupplier(id) {
-    const supplier = data.suppliers.find(s => s.id === id);
-    if (!supplier || supplier.debt <= 0) return;
-
-    const amount = Number(prompt(
-        `المجهز: ${supplier.name}\nالمستحق: ${money(supplier.debt)} د.ع\n\nكم دفعت؟`
-    ));
-
-    if (!amount || amount <= 0) return;
-    if (amount > supplier.debt) {
-        alert("المبلغ أكبر من الدين");
-        return;
+    // تقليل دين الزبون
+    if (sale.debt > 0 && sale.customer && sale.customer !== "زبون نقدي") {
+        const c = data.customers.find(
+            x => x.name.toLowerCase() === sale.customer.toLowerCase()
+        );
+        if (c) {
+            c.debt = Math.max(0, c.debt - sale.debt);
+        }
     }
 
-    supplier.debt -= amount;
-    data.payments.push({
-        id: uid(), type: "supplier",
-        person: supplier.name, amount, date: today()
-    });
-
+    // حذف البيعة
+    data.sales = data.sales.filter(s => s.id !== id);
     saveData();
     renderAll();
-    alert("✅ تم تسجيل التسديد");
+    alert("✅ تم حذف البيعة وإرجاع كل شي");
 }
 
+function deletePurchase(id) {
+    const purchase = data.purchases.find(p => p.id === id);
+    if (!purchase) return;
 
+    const product = data.products.find(
+        p => p.name.toLowerCase() === purchase.product.toLowerCase()
+    );
+
+    let msg = `⚠️ سيتم حذف هذا الشراء:\n\n`;
+    msg += `📦 المادة: ${purchase.product}\n`;
+    msg += `🔢 الكمية: ${purchase.quantity} ${purchase.unitLabel || "وحدة"}\n`;
+    msg += `💰 المجموع: ${money(purchase.total)} د.ع\n\n`;
+    msg += `سيتم:\n`;
+    if (product) {
+        msg += `➖ سحب ${purchase.quantity} ${purchase.unitLabel || "وحدة"} من المخزون\n`;
+    }
+    if (purchase.debt > 0 && purchase.supplier && purchase.supplier !== "مجهز غير محدد") {
+        msg += `✅ تقليل دين ${purchase.supplier} بـ ${money(purchase.debt)} د.ع\n`;
+    }
+    if (purchase.paid > 0) {
+        msg += `✅ إرجاع ${money(purchase.paid)} د.ع إلى الخزنة\n`;
+    }
+    msg += `\nمتأكد؟`;
+
+    if (!confirm(msg)) return;
+
+    // سحب المخزون
+    if (product) {
+        if (product.multi) {
+            if (purchase.unit === "main") {
+                const perMain = Number(product.perMain) || 12;
+                product.stockSmall = Math.max(0,
+                    (Number(product.stockSmall) || 0) - (purchase.quantity * perMain));
+            } else {
+                product.stockSmall = Math.max(0,
+                    (Number(product.stockSmall) || 0) - purchase.quantity);
+            }
+        } else {
+            product.quantity = Math.max(0,
+                (Number(product.quantity) || 0) - purchase.quantity);
+        }
+    }
+
+    // تقليل دين المجهز
+    if (purchase.debt > 0 && purchase.supplier && purchase.supplier !== "مجهز غير محدد") {
+        const s = data.suppliers.find(
+            x => x.name.toLowerCase() === purchase.supplier.toLowerCase()
+        );
+        if (s) {
+            s.debt = Math.max(0, s.debt - purchase.debt);
+        }
+    }
+
+    data.purchases = data.purchases.filter(p => p.id !== id);
+    saveData();
+    renderAll();
+    alert("✅ تم حذف الشراء وتعديل كل شي");
+}
+
+function deleteExpense(id) {
+    if (!confirm("هل أنت متأكد من حذف هذا المصروف؟")) return;
+    data.expenses = data.expenses.filter(e => e.id !== id);
+    saveData();
+    renderAll();
+}
+
+function deleteCustomer(id) {
+    const c = data.customers.find(x => x.id === id);
+    if (!c) return;
+
+    // البحث عن عمليات مرتبطة
+    const sales = data.sales.filter(
+        s => (s.customer || "").toLowerCase() === c.name.toLowerCase()
+    );
+    const payments = data.payments.filter(
+        p => p.type === "customer" && p.person === c.name
+    );
+
+    let msg = `⚠️ سيتم حذف الزبون: ${c.name}\n\n`;
+
+    if (sales.length || payments.length || c.debt > 0) {
+        msg += `📋 العمليات المرتبطة:\n`;
+        if (sales.length) msg += `• ${sales.length} مبيعات\n`;
+        if (payments.length) msg += `• ${payments.length} تسديدات\n`;
+        if (c.debt > 0) msg += `• دين: ${money(c.debt)} د.ع\n`;
+        msg += `\n`;
+
+        // نسأل: هل نرجع المخزون والدين؟
+        if (sales.length) {
+            const restore = confirm(
+                msg +
+                `هل تريد إرجاع المخزون للعمليات المرتبطة أيضاً؟\n\n` +
+                `(موافق = يرجع المخزون، إلغاء = ما يرجع)`
+            );
+            if (restore) {
+                sales.forEach(s => {
+                    const p = data.products.find(
+                        x => x.name.toLowerCase() === s.product.toLowerCase()
+                    );
+                    if (p) restoreStock(p, s.unit, s.quantity);
+                });
+            }
+        }
+
+        if (!confirm(`هل أنت متأكد 100% من حذف "${c.name}" وكل عملياته؟`)) return;
+    } else {
+        if (!confirm(msg + `حذف "${c.name}"؟`)) return;
+    }
+
+    // حذف المبيعات المرتبطة
+    data.sales = data.sales.filter(
+        s => (s.customer || "").toLowerCase() !== c.name.toLowerCase()
+    );
+
+    // حذف التسديدات المرتبطة
+    data.payments = data.payments.filter(
+        p => !(p.type === "customer" && p.person === c.name)
+    );
+
+    // حذف الزبون
+    data.customers = data.customers.filter(x => x.id !== id);
+    saveData();
+    renderAll();
+    alert("✅ تم حذف الزبون وكل عملياته");
+}
+
+function deleteSupplier(id) {
+    const s = data.suppliers.find(x => x.id === id);
+    if (!s) return;
+
+    const purchases = data.purchases.filter(
+        p => (p.supplier || "").toLowerCase() === s.name.toLowerCase()
+    );
+    const payments = data.payments.filter(
+        p => p.type === "supplier" && p.person === s.name
+    );
+
+    let msg = `⚠️ سيتم حذف المجهز: ${s.name}\n\n`;
+
+    if (purchases.length || payments.length || s.debt > 0) {
+        msg += `📋 العمليات المرتبطة:\n`;
+        if (purchases.length) msg += `• ${purchases.length} مشتريات\n`;
+        if (payments.length) msg += `• ${payments.length} تسديدات\n`;
+        if (s.debt > 0) msg += `• دين علينا: ${money(s.debt)} د.ع\n`;
+        msg += `\n`;
+
+        if (purchases.length) {
+            const remove = confirm(
+                msg +
+                `هل تريد سحب المخزون للعمليات المرتبطة أيضاً؟\n\n` +
+                `(موافق = يسحب المخزون، إلغاء = ما يسحب)`
+            );
+            if (remove) {
+                purchases.forEach(p => {
+                    const prod = data.products.find(
+                        x => x.name.toLowerCase() === p.product.toLowerCase()
+                    );
+                    if (prod) {
+                        if (prod.multi) {
+                            const perMain = Number(prod.perMain) || 12;
+                            if (p.unit === "main") {
+                                prod.stockSmall = Math.max(0,
+                                    (Number(prod.stockSmall) || 0) - (p.quantity * perMain));
+                            } else {
+                                prod.stockSmall = Math.max(0,
+                                    (Number(prod.stockSmall) || 0) - p.quantity);
+                            }
+                        } else {
+                            prod.quantity = Math.max(0,
+                                (Number(prod.quantity) || 0) - p.quantity);
+                        }
+                    }
+                });
+            }
+        }
+
+        if (!confirm(`هل أنت متأكد 100% من حذف "${s.name}" وكل عملياته؟`)) return;
+    } else {
+        if (!confirm(msg + `حذف "${s.name}"؟`)) return;
+    }
+
+    data.purchases = data.purchases.filter(
+        p => (p.supplier || "").toLowerCase() !== s.name.toLowerCase()
+    );
+    data.payments = data.payments.filter(
+        p => !(p.type === "supplier" && p.person === s.name)
+    );
+    data.suppliers = data.suppliers.filter(x => x.id !== id);
+    saveData();
+    renderAll();
+    alert("✅ تم حذف المجهز وكل عملياته");
+}
+
+function deleteProduct(id) {
+    const p = data.products.find(x => x.id === id);
+    if (!p) return;
+
+    const sales = data.sales.filter(
+        s => s.product.toLowerCase() === p.name.toLowerCase()
+    );
+    const purchases = data.purchases.filter(
+        x => x.product.toLowerCase() === p.name.toLowerCase()
+    );
+
+    let msg = `⚠️ سيتم حذف المادة: ${p.name}\n\n`;
+
+    if (sales.length || purchases.length) {
+        msg += `📋 العمليات المرتبطة:\n`;
+        if (sales.length) msg += `• ${sales.length} مبيعات\n`;
+        if (purchases.length) msg += `• ${purchases.length} مشتريات\n`;
+        msg += `\n`;
+
+        if (sales.length) {
+            const restore = confirm(
+                msg +
+                `هل تريد إرجاع المخزون للمبيعات المرتبطة أيضاً؟\n\n` +
+                `(موافق = يرجع المخزون، إلغاء = ما يرجع)`
+            );
+            if (restore) {
+                sales.forEach(s => {
+                    restoreStock(p, s.unit, s.quantity);
+                });
+            }
+        }
+
+        if (!confirm(`هل أنت متأكد 100% من حذف "${p.name}" وكل عملياته؟`)) return;
+    } else {
+        if (!confirm(msg + `حذف "${p.name}"؟`)) return;
+    }
+
+    // تقليل ديون الزبائن والمجهزين المرتبطين
+    sales.forEach(s => {
+        if (s.debt > 0 && s.customer && s.customer !== "زبون نقدي") {
+            const c = data.customers.find(
+                x => x.name.toLowerCase() === s.customer.toLowerCase()
+            );
+            if (c) c.debt = Math.max(0, c.debt - s.debt);
+        }
+    });
+    purchases.forEach(pur => {
+        if (pur.debt > 0 && pur.supplier && pur.supplier !== "مجهز غير محدد") {
+            const sup = data.suppliers.find(
+                x => x.name.toLowerCase() === pur.supplier.toLowerCase()
+            );
+            if (sup) sup.debt = Math.max(0, sup.debt - pur.debt);
+        }
+    });
+
+    data.sales = data.sales.filter(
+        s => s.product.toLowerCase() !== p.name.toLowerCase()
+    );
+    data.purchases = data.purchases.filter(
+        x => x.product.toLowerCase() !== p.name.toLowerCase()
+    );
+    data.products = data.products.filter(x => x.id !== id);
+    saveData();
+    renderAll();
+    alert("✅ تم حذف المادة وكل عملياتها");
+}
+
+// ============================================================
+// التعديل (Edit Modal)
+// ============================================================
+
+let editContext = null;
+
+function openEdit(type, id) {
+    editContext = { type, id };
+    const modal = document.getElementById("editModal");
+    const title = document.getElementById("editTitle");
+    const body = document.getElementById("editBody");
+    body.innerHTML = "";
+
+    if (type === "sale") {
+        const s = data.sales.find(x => x.id === id);
+        if (!s) return;
+        title.textContent = "✏️ تعديل البيعة";
+
+        body.innerHTML = `
+            <label>الزبون</label>
+            <input type="text" id="edit_sale_customer" value="${escapeHTML(s.customer)}">
+
+            <label>المادة (غير قابلة للتعديل)</label>
+            <input type="text" value="${escapeHTML(s.product)}" disabled>
+
+            <label>الوحدة</label>
+            <select id="edit_sale_unit">
+                <option value="main" ${s.unit === "main" ? "selected" : ""}>كارتونة</option>
+                <option value="small" ${s.unit === "small" ? "selected" : ""}>طبقة</option>
+            </select>
+
+            <label>الكمية</label>
+            <input type="number" id="edit_sale_quantity" value="${s.quantity}" min="1">
+
+            <label>سعر الوحدة</label>
+            <input type="number" id="edit_sale_price" value="${s.price}" min="0">
+
+            <label>نوع الدفع</label>
+            <select id="edit_sale_payment">
+                <option value="cash" ${s.payment === "cash" ? "selected" : ""}>نقدًا</option>
+                <option value="debt" ${s.payment === "debt" ? "selected" : ""}>دين</option>
+                <option value="partial" ${s.payment === "partial" ? "selected" : ""}>دفع جزئي</option>
+            </select>
+
+            <label>المبلغ المدفوع (لدفع جزئي فقط)</label>
+            <input type="number" id="edit_sale_paid" value="${s.paid}" min="0">
+        `;
+    }
+
+    if (type === "purchase") {
+        const p = data.purchases.find(x => x.id === id);
+        if (!p) return;
+        title.textContent = "✏️ تعديل الشراء";
+
+        body.innerHTML = `
+            <label>المجهز</label>
+            <input type="text" id="edit_pur_supplier" value="${escapeHTML(p.supplier)}">
+
+            <label>المادة (غير قابلة للتعديل)</label>
+            <input type="text" value="${escapeHTML(p.product)}" disabled>
+
+            <label>الكمية</label>
+            <input type="number" id="edit_pur_quantity" value="${p.quantity}" min="1">
+
+            <label>سعر الوحدة</label>
+            <input type="number" id="edit_pur_price" value="${p.price}" min="0">
+
+            <label>نوع الدفع</label>
+            <select id="edit_pur_payment">
+                <option value="cash" ${p.payment === "cash" ? "selected" : ""}>نقدًا</option>
+                <option value="debt" ${p.payment === "debt" ? "selected" : ""}>دين</option>
+                <option value="partial" ${p.payment === "partial" ? "selected" : ""}>دفع جزئي</option>
+            </select>
+
+            <label>المبلغ المدفوع (لدفع جزئي فقط)</label>
+            <input type="number" id="edit_pur_paid" value="${p.paid}" min="0">
+        `;
+    }
+
+    if (type === "expense") {
+        const e = data.expenses.find(x => x.id === id);
+        if (!e) return;
+        title.textContent = "✏️ تعديل المصروف";
+
+        body.innerHTML = `
+            <label>نوع المصروف</label>
+            <input type="text" id="edit_exp_name" value="${escapeHTML(e.name)}">
+
+            <label>المبلغ</label>
+            <input type="number" id="edit_exp_amount" value="${e.amount}" min="0">
+
+            <label>ملاحظات</label>
+            <input type="text" id="edit_exp_note" value="${escapeHTML(e.note || "")}">
+        `;
+    }
+
+    if (type === "customer") {
+        const c = data.customers.find(x => x.id === id);
+        if (!c) return;
+        title.textContent = "✏️ تعديل الزبون";
+
+        body.innerHTML = `
+            <label>اسم الزبون</label>
+            <input type="text" id="edit_cus_name" value="${escapeHTML(c.name)}">
+
+            <label>رقم الهاتف</label>
+            <input type="text" id="edit_cus_phone" value="${escapeHTML(c.phone || "")}">
+
+            <label>الدين الحالي</label>
+            <input type="number" id="edit_cus_debt" value="${c.debt}" min="0">
+        `;
+    }
+
+    if (type === "supplier") {
+        const s = data.suppliers.find(x => x.id === id);
+        if (!s) return;
+        title.textContent = "✏️ تعديل المجهز";
+
+        body.innerHTML = `
+            <label>اسم المجهز</label>
+            <input type="text" id="edit_sup_name" value="${escapeHTML(s.name)}">
+
+            <label>رقم الهاتف</label>
+            <input type="text" id="edit_sup_phone" value="${escapeHTML(s.phone || "")}">
+
+            <label>الدين الحالي</label>
+            <input type="number" id="edit_sup_debt" value="${s.debt}" min="0">
+        `;
+    }
+
+    if (type === "product") {
+        const p = data.products.find(x => x.id === id);
+        if (!p) return;
+        title.textContent = "✏️ تعديل المادة";
+
+        if (p.multi) {
+            const { mains, small } = productStockParts(p);
+            body.innerHTML = `
+                <label>اسم المادة</label>
+                <input type="text" id="edit_prod_name" value="${escapeHTML(p.name)}">
+
+                <label>اسم الوحدة الكبيرة</label>
+                <input type="text" id="edit_prod_unitmain" value="${escapeHTML(p.unitMain || "كارتونة")}">
+
+                <label>اسم الوحدة الصغيرة</label>
+                <input type="text" id="edit_prod_unitsmall" value="${escapeHTML(p.unitSmall || "طبقة")}">
+
+                <label>كم طبقة بالكارتونة</label>
+                <input type="number" id="edit_prod_permain" value="${p.perMain || 12}" min="1">
+
+                <label>المخزون الحالي: ${mains} كارتونة + ${small} طبقة</label>
+                <input type="number" id="edit_prod_stock" value="${p.stockSmall || 0}" min="0">
+                <small style="color:#64748b;display:block;margin-top:-8px;margin-bottom:12px;">
+                    (إجمالي الطبقات — مثلاً 12 = كارتونة واحدة)
+                </small>
+
+                <label>سعر شراء الكارتونة</label>
+                <input type="number" id="edit_prod_buymain" value="${p.buyPriceMain || 0}" min="0">
+
+                <label>سعر بيع الكارتونة</label>
+                <input type="number" id="edit_prod_sellmain" value="${p.sellPriceMain || 0}" min="0">
+
+                <label>سعر بيع الطبقة</label>
+                <input type="number" id="edit_prod_sellsmall" value="${p.sellPriceSmall || 0}" min="0">
+            `;
+        } else {
+            body.innerHTML = `
+                <label>اسم المادة</label>
+                <input type="text" id="edit_prod_name" value="${escapeHTML(p.name)}">
+
+                <label>الكمية</label>
+                <input type="number" id="edit_prod_qty" value="${p.quantity || 0}" min="0">
+
+                <label>سعر الشراء</label>
+                <input type="number" id="edit_prod_buy" value="${p.buyPrice || 0}" min="0">
+
+                <label>سعر البيع</label>
+                <input type="number" id="edit_prod_sell" value="${p.sellPrice || 0}" min="0">
+            `;
+        }
+    }
+
+    modal.style.display = "flex";
+}
+
+function closeEdit() {
+    document.getElementById("editModal").style.display = "none";
+    editContext = null;
+}
+
+function saveEdit() {
+    if (!editContext) return;
+    const { type, id } = editContext;
+
+    if (type === "sale") {
+        const s = data.sales.find(x => x.id === id);
+        if (!s) return;
+
+        const newUnit = document.getElementById("edit_sale_unit").value;
+        const newQty = Number(document.getElementById("edit_sale_quantity").value);
+        const newPrice = Number(document.getElementById("edit_sale_price").value);
+        const newPayment = document.getElementById("edit_sale_payment").value;
+        const newPaidInput = Number(document.getElementById("edit_sale_paid").value) || 0;
+        const newCustomer = document.getElementById("edit_sale_customer").value.trim() || "زبون نقدي";
+
+        if (newQty <= 0 || newPrice < 0) {
+            alert("تأكد من الكمية والسعر");
+            return;
+        }
+
+        const product = data.products.find(
+            p => p.name.toLowerCase() === s.product.toLowerCase()
+        );
+
+        // إرجاع المخزون القديم
+        if (product) restoreStock(product, s.unit, s.quantity);
+
+        // سحب المخزون الجديد
+        if (product) {
+            const r = removeStockForEdit(product, newUnit, newQty);
+            if (!r.ok) {
+                // إذا فشل، نرجع القديم
+                if (product) restoreStock(product, newUnit, newQty);
+                if (product) restoreStock(product, s.unit, 0); // لا شي
+                alert(r.message);
+                return;
+            }
+        }
+
+        const newTotal = newQty * newPrice;
+        let newActualPaid = newTotal;
+        if (newPayment === "debt") newActualPaid = 0;
+        if (newPayment === "partial") {
+            if (newPaidInput <= 0 || newPaidInput >= newTotal) {
+                alert("المبلغ المدفوع غير صحيح");
+                return;
+            }
+            newActualPaid = newPaidInput;
+        }
+        const newDebt = newTotal - newActualPaid;
+
+        // تعديل دين الزبون القديم
+        if (s.debt > 0 && s.customer && s.customer !== "زبون نقدي") {
+            const oldC = data.customers.find(
+                x => x.name.toLowerCase() === s.customer.toLowerCase()
+            );
+            if (oldC) oldC.debt = Math.max(0, oldC.debt - s.debt);
+        }
+
+        // تعديل دين الزبون الجديد
+        if (newDebt > 0 && newCustomer && newCustomer !== "زبون نقدي") {
+            let nc = data.customers.find(
+                x => x.name.toLowerCase() === newCustomer.toLowerCase()
+            );
+            if (!nc) {
+                nc = { id: uid(), name: newCustomer, phone: "", debt: 0 };
+                data.customers.push(nc);
+            }
+            nc.debt += newDebt;
+        }
+
+        s.customer = newCustomer;
+        s.unit = newUnit;
+        s.unitLabel = product && product.multi
+            ? (newUnit === "main" ? (product.unitMain || "كارتونة") : (product.unitSmall || "طبقة"))
+            : "وحدة";
+        s.quantity = newQty;
+        s.price = newPrice;
+        s.total = newTotal;
+        s.payment = newPayment;
+        s.paid = newActualPaid;
+        s.debt = newDebt;
+
+        saveData();
+        closeEdit();
+        renderAll();
+        alert("✅ تم تعديل البيعة");
+    }
+
+    if (type === "purchase") {
+        const p = data.purchases.find(x => x.id === id);
+        if (!p) return;
+
+        const newQty = Number(document.getElementById("edit_pur_quantity").value);
+        const newPrice = Number(document.getElementById("edit_pur_price").value);
+        const newPayment = document.getElementById("edit_pur_payment").value;
+        const newPaidInput = Number(document.getElementById("edit_pur_paid").value) || 0;
+        const newSupplier = document.getElementById("edit_pur_supplier").value.trim() || "مجهز غير محدد";
+
+        if (newQty <= 0 || newPrice < 0) {
+            alert("تأكد من الكمية والسعر");
+            return;
+        }
+
+        const product = data.products.find(
+            x => x.name.toLowerCase() === p.product.toLowerCase()
+        );
+
+        // سحب المخزون القديم
+        if (product) {
+            if (product.multi) {
+                const perMain = Number(product.perMain) || 12;
+                if (p.unit === "main") {
+                    product.stockSmall = Math.max(0,
+                        (Number(product.stockSmall) || 0) - (p.quantity * perMain));
+                } else {
+                    product.stockSmall = Math.max(0,
+                        (Number(product.stockSmall) || 0) - p.quantity);
+                }
+            } else {
+                product.quantity = Math.max(0,
+                    (Number(product.quantity) || 0) - p.quantity);
+            }
+
+            // إضافة الجديد
+            if (product.multi) {
+                addMain(product, newQty);
+            } else {
+                product.quantity = (Number(product.quantity) || 0) + newQty;
+            }
+        }
+
+        const newTotal = newQty * newPrice;
+        let newActualPaid = newTotal;
+        if (newPayment === "debt") newActualPaid = 0;
+        if (newPayment === "partial") {
+            if (newPaidInput <= 0 || newPaidInput >= newTotal) {
+                alert("المبلغ المدفوع غير صحيح");
+                return;
+            }
+            newActualPaid = newPaidInput;
+        }
+        const newDebt = newTotal - newActualPaid;
+
+        // تعديل دين المجهز القديم
+        if (p.debt > 0 && p.supplier && p.supplier !== "مجهز غير محدد") {
+            const oldS = data.suppliers.find(
+                x => x.name.toLowerCase() === p.supplier.toLowerCase()
+            );
+            if (oldS) oldS.debt = Math.max(0, oldS.debt - p.debt);
+        }
+
+        // تعديل دين المجهز الجديد
+        if (newDebt > 0 && newSupplier && newSupplier !== "مجهز غير محدد") {
+            let ns = data.suppliers.find(
+                x => x.name.toLowerCase() === newSupplier.toLowerCase()
+            );
+            if (!ns) {
+                ns = { id: uid(), name: newSupplier, phone: "", debt: 0 };
+                data.suppliers.push(ns);
+            }
+            ns.debt += newDebt;
+        }
+
+        p.supplier = newSupplier;
+        p.quantity = newQty;
+        p.price = newPrice;
+        p.total = newTotal;
+        p.payment = newPayment;
+        p.paid = newActualPaid;
+        p.debt = newDebt;
+
+        saveData();
+        closeEdit();
+        renderAll();
+        alert("✅ تم تعديل الشراء");
+    }
+
+    if (type === "expense") {
+        const e = data.expenses.find(x => x.id === id);
+        if (!e) return;
+
+        const newName = document.getElementById("edit_exp_name").value.trim();
+        const newAmount = Number(document.getElementById("edit_exp_amount").value);
+        const newNote = document.getElementById("edit_exp_note").value.trim();
+
+        if (!newName || newAmount <= 0) {
+            alert("تأكد من البيانات");
+            return;
+        }
+
+        e.name = newName;
+        e.amount = newAmount;
+        e.note = newNote;
+
+        saveData();
+        closeEdit();
+        renderAll();
+        alert("✅ تم تعديل المصروف");
+    }
+
+    if (type === "customer") {
+        const c = data.customers.find(x => x.id === id);
+        if (!c) return;
+
+        const newName = document.getElementById("edit_cus_name").value.trim();
+        const newPhone = document.getElementById("edit_cus_phone").value.trim();
+        const newDebt = Number(document.getElementById("edit_cus_debt").value) || 0;
+
+        if (!newName) { alert("الاسم مطلوب"); return; }
+
+        const oldName = c.name;
+
+        // تعديل العمليات المرتبطة
+        if (oldName !== newName) {
+            data.sales.forEach(s => {
+                if ((s.customer || "").toLowerCase() === oldName.toLowerCase()) {
+                    s.customer = newName;
+                }
+            });
+            data.payments.forEach(p => {
+                if (p.type === "customer" && p.person === oldName) {
+                    p.person = newName;
+                }
+            });
+        }
+
+        c.name = newName;
+        c.phone = newPhone;
+        c.debt = newDebt;
+
+        saveData();
+        closeEdit();
+        renderAll();
+        alert("✅ تم تعديل الزبون");
+    }
+
+    if (type === "supplier") {
+        const s = data.suppliers.find(x => x.id === id);
+        if (!s) return;
+
+        const newName = document.getElementById("edit_sup_name").value.trim();
+        const newPhone = document.getElementById("edit_sup_phone").value.trim();
+        const newDebt = Number(document.getElementById("edit_sup_debt").value) || 0;
+
+        if (!newName) { alert("الاسم مطلوب"); return; }
+
+        const oldName = s.name;
+
+        if (oldName !== newName) {
+            data.purchases.forEach(p => {
+                if ((p.supplier || "").toLowerCase() === oldName.toLowerCase()) {
+                    p.supplier = newName;
+                }
+            });
+            data.payments.forEach(p => {
+                if (p.type === "supplier" && p.person === oldName) {
+                    p.person = newName;
+                }
+            });
+        }
+
+        s.name = newName;
+        s.phone = newPhone;
+        s.debt = newDebt;
+
+        saveData();
+        closeEdit();
+        renderAll();
+        alert("✅ تم تعديل المجهز");
+    }
+
+    if (type === "product") {
+        const p = data.products.find(x => x.id === id);
+        if (!p) return;
+
+        const newName = document.getElementById("edit_prod_name").value.trim();
+        if (!newName) { alert("الاسم مطلوب"); return; }
+
+        const oldName = p.name;
+
+        if (p.multi) {
+            p.unitMain = document.getElementById("edit_prod_unitmain").value.trim() || "كارتونة";
+            p.unitSmall = document.getElementById("edit_prod_unitsmall").value.trim() || "طبقة";
+            p.perMain = Number(document.getElementById("edit_prod_permain").value) || 12;
+            p.stockSmall = Number(document.getElementById("edit_prod_stock").value) || 0;
+            p.buyPriceMain = Number(document.getElementById("edit_prod_buymain").value) || 0;
+            p.sellPriceMain = Number(document.getElementById("edit_prod_sellmain").value) || 0;
+            p.sellPriceSmall = Number(document.getElementById("edit_prod_sellsmall").value) || 0;
+        } else {
+            p.quantity = Number(document.getElementById("edit_prod_qty").value) || 0;
+            p.buyPrice = Number(document.getElementById("edit_prod_buy").value) || 0;
+            p.sellPrice = Number(document.getElementById("edit_prod_sell").value) || 0;
+        }
+
+        if (oldName !== newName) {
+            data.sales.forEach(s => {
+                if (s.product.toLowerCase() === oldName.toLowerCase()) {
+                    s.product = newName;
+                }
+            });
+            data.purchases.forEach(x => {
+                if (x.product.toLowerCase() === oldName.toLowerCase()) {
+                    x.product = newName;
+                }
+            });
+        }
+
+        p.name = newName;
+
+        saveData();
+        closeEdit();
+        renderAll();
+        alert("✅ تم تعديل المادة");
+    }
+}
 // ============================================================
 // عرض الزبائن
 // ============================================================
@@ -628,15 +1341,15 @@ function renderCustomers() {
             </div>
             <div class="item-actions">
                 <button class="history-btn" onclick="showCustomerHistory(${x.id})">📒 كشف</button>
+                <button class="edit-btn" onclick="openEdit('customer', ${x.id})">✏️</button>
                 ${x.debt > 0
                     ? `<button class="pay-btn" onclick="payCustomer(${x.id})">💵 تسديد</button>`
                     : ""}
-                <button class="delete-btn" onclick="deleteItem('customers', ${x.id})">حذف</button>
+                <button class="delete-btn" onclick="deleteCustomer(${x.id})">🗑️</button>
             </div>
         </div>
     `).join("");
 }
-
 
 // ============================================================
 // عرض المجهزين
@@ -672,15 +1385,15 @@ function renderSuppliers() {
             </div>
             <div class="item-actions">
                 <button class="history-btn" onclick="showSupplierHistory(${s.id})">📒 كشف</button>
+                <button class="edit-btn" onclick="openEdit('supplier', ${s.id})">✏️</button>
                 ${s.debt > 0
                     ? `<button class="pay-btn" onclick="paySupplier(${s.id})">💵 تسديد</button>`
                     : ""}
-                <button class="delete-btn" onclick="deleteItem('suppliers', ${s.id})">حذف</button>
+                <button class="delete-btn" onclick="deleteSupplier(${s.id})">🗑️</button>
             </div>
         </div>
     `).join("");
 }
-
 
 // ============================================================
 // عرض المخزون
@@ -716,7 +1429,8 @@ function renderProducts() {
                     </div>
                 </div>
                 <div class="item-actions">
-                    <button class="delete-btn" onclick="deleteItem('products', ${p.id})">حذف</button>
+                    <button class="edit-btn" onclick="openEdit('product', ${p.id})">✏️</button>
+                    <button class="delete-btn" onclick="deleteProduct(${p.id})">🗑️</button>
                 </div>
             </div>
         `).join("");
@@ -729,7 +1443,6 @@ function renderProducts() {
         ).join("");
     }
 }
-
 
 // ============================================================
 // عرض المبيعات
@@ -768,12 +1481,12 @@ function renderSales() {
             </div>
             <div class="item-actions">
                 <button class="print-btn" onclick="printSaleInvoice(${s.id})">🖨️</button>
-                <button class="delete-btn" onclick="deleteItem('sales', ${s.id})">حذف</button>
+                <button class="edit-btn" onclick="openEdit('sale', ${s.id})">✏️</button>
+                <button class="delete-btn" onclick="deleteSale(${s.id})">🗑️</button>
             </div>
         </div>
     `).join("");
 }
-
 
 // ============================================================
 // عرض المشتريات
@@ -811,12 +1524,12 @@ function renderPurchases() {
                 </div>
             </div>
             <div class="item-actions">
-                <button class="delete-btn" onclick="deleteItem('purchases', ${p.id})">حذف</button>
+                <button class="edit-btn" onclick="openEdit('purchase', ${p.id})">✏️</button>
+                <button class="delete-btn" onclick="deletePurchase(${p.id})">🗑️</button>
             </div>
         </div>
     `).join("");
 }
-
 
 // ============================================================
 // عرض المصاريف
@@ -849,12 +1562,12 @@ function renderExpenses() {
                 </div>
             </div>
             <div class="item-actions">
-                <button class="delete-btn" onclick="deleteItem('expenses', ${e.id})">حذف</button>
+                <button class="edit-btn" onclick="openEdit('expense', ${e.id})">✏️</button>
+                <button class="delete-btn" onclick="deleteExpense(${e.id})">🗑️</button>
             </div>
         </div>
     `).join("");
 }
-
 
 // ============================================================
 // عرض الديون
@@ -880,6 +1593,7 @@ function renderDebts() {
                     </div>
                 </div>
                 <div class="item-actions">
+                    <button class="history-btn" onclick="showCustomerHistory(${c.id})">📒</button>
                     <button class="pay-btn" onclick="payCustomer(${c.id})">💵 تسديد</button>
                 </div>
             </div>
@@ -898,13 +1612,13 @@ function renderDebts() {
                     </div>
                 </div>
                 <div class="item-actions">
+                    <button class="history-btn" onclick="showSupplierHistory(${s.id})">📒</button>
                     <button class="pay-btn" onclick="paySupplier(${s.id})">💵 تسديد</button>
                 </div>
             </div>
         `).join("");
     }
 }
-
 
 // ============================================================
 // لوحة التحكم
@@ -974,112 +1688,59 @@ function renderDashboard() {
     `).join("");
 }
 
-
 // ============================================================
-// 💾 النسخ الاحتياطي (Backup / Restore)
+// تسديد دين زبون / مجهز
 // ============================================================
 
-function exportData() {
-    const backup = {
-        version: "2.0",
-        exportDate: new Date().toISOString(),
-        data: data
-    };
+function payCustomer(id) {
+    const customer = data.customers.find(c => c.id === id);
+    if (!customer || customer.debt <= 0) return;
 
-    const json = JSON.stringify(backup, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
+    const amount = Number(prompt(
+        `الزبون: ${customer.name}\nالدين الحالي: ${money(customer.debt)} د.ع\n\nكم دفع؟`
+    ));
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `hisaabati-backup-${today()}.json`;
-    a.click();
-
-    URL.revokeObjectURL(url);
-    alert("✅ تم تنزيل النسخة الاحتياطية");
-}
-
-function importData(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    if (!confirm("⚠️ سيتم استبدال كل البيانات الحالية. متأكد؟")) {
-        event.target.value = "";
+    if (!amount || amount <= 0) return;
+    if (amount > customer.debt) {
+        alert("المبلغ أكبر من الدين");
         return;
     }
 
-    const reader = new FileReader();
-    reader.onload = function (e) {
-        try {
-            const parsed = JSON.parse(e.target.result);
-            const importedData = parsed.data || parsed;
-
-            if (!importedData.customers && !importedData.sales) {
-                alert("❌ ملف غير صالح");
-                return;
-            }
-
-            data = {
-                customers: importedData.customers || [],
-                suppliers: importedData.suppliers || [],
-                products: importedData.products || [],
-                sales: importedData.sales || [],
-                purchases: importedData.purchases || [],
-                expenses: importedData.expenses || [],
-                payments: importedData.payments || []
-            };
-
-            saveData();
-            renderAll();
-            alert("✅ تم استيراد البيانات بنجاح");
-        } catch (err) {
-            alert("❌ فشل قراءة الملف: " + err.message);
-        }
-    };
-    reader.readAsText(file);
-    event.target.value = "";
-}
-
-function quickBackup() {
-    exportData();
-}
-
-function wipeAllData() {
-    if (!confirm("⚠️⚠️ تحذير: سيتم حذف كل البيانات نهائياً!\n\nهل أنت متأكد؟")) return;
-    if (!confirm("تأكيد نهائي: لا يمكن الرجوع بعد الحذف!\n\nهل أنت متأكد 100%؟")) return;
-
-    data = {
-        customers: [],
-        suppliers: [],
-        products: [],
-        sales: [],
-        purchases: [],
-        expenses: [],
-        payments: []
-    };
+    customer.debt -= amount;
+    data.payments.push({
+        id: uid(), type: "customer",
+        person: customer.name, amount, date: today()
+    });
 
     saveData();
     renderAll();
-    alert("🗑️ تم حذف كل البيانات");
+    alert("✅ تم تسجيل التسديد");
 }
 
-function renderBackupInfo() {
-    const set = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = val;
-    };
-    set("bkCustomers", data.customers.length);
-    set("bkSales", data.sales.length);
-    set("bkPurchases", data.purchases.length);
-    set("bkProducts", data.products.length);
+function paySupplier(id) {
+    const supplier = data.suppliers.find(s => s.id === id);
+    if (!supplier || supplier.debt <= 0) return;
 
-    const lastSave = localStorage.getItem("accountingData_v2");
-    const el = document.getElementById("bkLastSave");
-    if (el && lastSave) {
-        el.textContent = "الآن (البيانات محفوظة تلقائياً)";
+    const amount = Number(prompt(
+        `المجهز: ${supplier.name}\nالمستحق: ${money(supplier.debt)} د.ع\n\nكم دفعت؟`
+    ));
+
+    if (!amount || amount <= 0) return;
+    if (amount > supplier.debt) {
+        alert("المبلغ أكبر من الدين");
+        return;
     }
-}
 
+    supplier.debt -= amount;
+    data.payments.push({
+        id: uid(), type: "supplier",
+        person: supplier.name, amount, date: today()
+    });
+
+    saveData();
+    renderAll();
+    alert("✅ تم تسجيل التسديد");
+}
 
 // ============================================================
 // 💵 الخزنة (Cashbox)
@@ -1212,7 +1873,6 @@ function renderCashbox() {
     `).join("");
 }
 
-
 // ============================================================
 // 🖨️ طباعة الفاتورة
 // ============================================================
@@ -1289,9 +1949,8 @@ function closeInvoice() {
     if (el) el.remove();
 }
 
-
 // ============================================================
-// 📒 كشف حساب (زبون / مجهز)
+// 📒 كشف حساب
 // ============================================================
 
 function showCustomerHistory(customerId) {
@@ -1480,6 +2139,137 @@ function showSupplierHistory(supplierId) {
     document.body.appendChild(div);
 }
 
+// ============================================================
+// 💾 النسخة الاحتياطية (مرتبة)
+// ============================================================
+
+function exportData() {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("ar-IQ");
+    const timeStr = now.toLocaleTimeString("ar-IQ");
+
+    // ملخص مرتب
+    const summary = {
+        "عدد الزبائن": data.customers.length,
+        "عدد المجهزين": data.suppliers.length,
+        "عدد المواد": data.products.length,
+        "عدد المبيعات": data.sales.length,
+        "عدد المشتريات": data.purchases.length,
+        "عدد المصاريف": data.expenses.length,
+        "عدد التسديدات": data.payments.length,
+        "إجمالي ديون الزبائن": data.customers.reduce((s, c) => s + c.debt, 0),
+        "إجمالي ديون المجهزين": data.suppliers.reduce((s, c) => s + c.debt, 0)
+    };
+
+    const backup = {
+        "🏪 اسم البرنامج": "حساباتي — إدارة المبيعات والديون",
+        "📅 تاريخ التصدير": dateStr,
+        "⏰ وقت التصدير": timeStr,
+        "📦 إصدار الملف": "2.0",
+        "📊 ملخص": summary,
+        "────────────────────": "البيانات الكاملة أدناه",
+        "بيانات": data
+    };
+
+    const json = JSON.stringify(backup, null, 4);
+    const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+
+    // اسم ملف مرتب
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    const h = String(now.getHours()).padStart(2, "0");
+    const mi = String(now.getMinutes()).padStart(2, "0");
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `حساباتي-${y}-${m}-${d}-${h}${mi}.json`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+    alert("✅ تم تنزيل النسخة الاحتياطية بنجاح");
+}
+
+function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!confirm("⚠️ سيتم استبدال كل البيانات الحالية. متأكد؟")) {
+        event.target.value = "";
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        try {
+            const parsed = JSON.parse(e.target.result);
+            const importedData = parsed["بيانات"] || parsed.data || parsed;
+
+            if (!importedData.customers && !importedData.sales) {
+                alert("❌ ملف غير صالح");
+                return;
+            }
+
+            data = {
+                customers: importedData.customers || [],
+                suppliers: importedData.suppliers || [],
+                products: importedData.products || [],
+                sales: importedData.sales || [],
+                purchases: importedData.purchases || [],
+                expenses: importedData.expenses || [],
+                payments: importedData.payments || []
+            };
+
+            saveData();
+            renderAll();
+            alert("✅ تم استيراد البيانات بنجاح");
+        } catch (err) {
+            alert("❌ فشل قراءة الملف: " + err.message);
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = "";
+}
+
+function quickBackup() {
+    exportData();
+}
+
+function wipeAllData() {
+    if (!confirm("⚠️⚠️ تحذير: سيتم حذف كل البيانات نهائياً!\n\nهل أنت متأكد؟")) return;
+    if (!confirm("تأكيد نهائي: لا يمكن الرجوع بعد الحذف!\n\nهل أنت متأكد 100%؟")) return;
+
+    data = {
+        customers: [],
+        suppliers: [],
+        products: [],
+        sales: [],
+        purchases: [],
+        expenses: [],
+        payments: []
+    };
+
+    saveData();
+    renderAll();
+    alert("🗑️ تم حذف كل البيانات");
+}
+
+function renderBackupInfo() {
+    const set = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+    };
+    set("bkCustomers", data.customers.length);
+    set("bkSales", data.sales.length);
+    set("bkPurchases", data.purchases.length);
+    set("bkProducts", data.products.length);
+
+    const el = document.getElementById("bkLastSave");
+    if (el) {
+        el.textContent = new Date().toLocaleString("ar-IQ");
+    }
+}
 
 // ============================================================
 // تشغيل كل شيء
