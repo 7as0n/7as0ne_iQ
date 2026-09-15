@@ -16,9 +16,8 @@
         </div>
         <div class="header-actions">
             <div class="header-date" id="headerDate"></div>
-            <button class="header-btn" onclick="quickBackup()" title="نسخة احتياطية سريعة">💾</button>
-            <button class="header-btn" onclick="exportData()" title="تصدير البيانات">📤</button>
-            <button class="header-btn" onclick="document.getElementById('importFile').click()" title="استيراد البيانات">📥</button>
+            <button class="header-btn" onclick="quickBackup()" title="نسخة احتياطية">💾</button>
+            <button class="header-btn" onclick="document.getElementById('importFile').click()" title="استيراد">📥</button>
             <input type="file" id="importFile" accept=".json,.html" style="display:none;" onchange="importData(event)">
         </div>
     </div>
@@ -34,6 +33,7 @@
     <button onclick="showPage('debts', this)">📒 الديون</button>
     <button onclick="showPage('expenses', this)">💸 المصاريف</button>
     <button onclick="showPage('cashbox', this)">💵 الخزنة</button>
+    <button onclick="showPage('reports', this)">📅 التقارير</button>
     <button onclick="showPage('backup', this)">💾 النسخ الاحتياطي</button>
 </nav>
 
@@ -55,19 +55,34 @@
                 <strong id="todayPurchases">0</strong>
                 <small>د.ع</small>
             </div>
+            <div class="card card-purple">
+                <span>💸 مصاريف اليوم</span>
+                <strong id="todayExpenses">0</strong>
+                <small>د.ع</small>
+            </div>
+            <div class="card card-green">
+                <span>📈 صافي ربح اليوم</span>
+                <strong id="todayNet">0</strong>
+                <small>د.ع</small>
+            </div>
             <div class="card card-red">
                 <span>👤 ديون لنا</span>
                 <strong id="customersDebt">0</strong>
                 <small>د.ع</small>
             </div>
-            <div class="card card-green">
+            <div class="card card-orange">
                 <span>🏪 ديون علينا</span>
                 <strong id="suppliersDebt">0</strong>
                 <small>د.ع</small>
             </div>
             <div class="card card-purple">
-                <span>💸 المصاريف</span>
+                <span>💸 إجمالي المصاريف</span>
                 <strong id="totalExpenses">0</strong>
+                <small>د.ع</small>
+            </div>
+            <div class="card card-teal">
+                <span>📈 صافي الربح الكلي</span>
+                <strong id="totalNet">0</strong>
                 <small>د.ع</small>
             </div>
             <div class="card card-teal">
@@ -109,7 +124,6 @@
 
     <!-- ============== المبيعات ============== -->
     <section id="sales" class="page">
-
         <h2>💰 المبيعات</h2>
 
         <form id="saleForm" class="form">
@@ -142,13 +156,11 @@
             </div>
             <div id="salesList"></div>
         </div>
-
     </section>
 
 
     <!-- ============== المشتريات ============== -->
     <section id="purchases" class="page">
-
         <h2>🛒 المشتريات</h2>
 
         <form id="purchaseForm" class="form">
@@ -176,13 +188,11 @@
             </div>
             <div id="purchasesList"></div>
         </div>
-
     </section>
 
 
     <!-- ============== الزبائن ============== -->
     <section id="customers" class="page">
-
         <h2>👥 الزبائن</h2>
 
         <form id="customerForm" class="form">
@@ -198,13 +208,11 @@
             </div>
             <div id="customersList"></div>
         </div>
-
     </section>
 
 
     <!-- ============== المجهزين ============== -->
     <section id="suppliers" class="page">
-
         <h2>🏪 المجهزين</h2>
 
         <form id="supplierForm" class="form">
@@ -220,13 +228,11 @@
             </div>
             <div id="suppliersList"></div>
         </div>
-
     </section>
 
 
     <!-- ============== المخزون ============== -->
     <section id="products" class="page">
-
         <h2>📦 المخزون</h2>
 
         <div class="panel inventory-summary">
@@ -288,13 +294,11 @@
             </div>
             <div id="productsList"></div>
         </div>
-
     </section>
 
 
     <!-- ============== الديون ============== -->
     <section id="debts" class="page">
-
         <h2>📒 الديون</h2>
 
         <div class="debt-box">
@@ -306,13 +310,11 @@
             <h3>🏪 ديون علينا (للمجهزين)</h3>
             <div id="supplierDebts"></div>
         </div>
-
     </section>
 
 
     <!-- ============== المصاريف ============== -->
     <section id="expenses" class="page">
-
         <h2>💸 المصاريف</h2>
 
         <form id="expenseForm" class="form">
@@ -329,13 +331,11 @@
             </div>
             <div id="expensesList"></div>
         </div>
-
     </section>
 
 
     <!-- ============== الخزنة ============== -->
     <section id="cashbox" class="page">
-
         <h2>💵 الخزنة (الصندوق)</h2>
 
         <div class="cards">
@@ -363,13 +363,75 @@
             </div>
             <div id="cashboxList"></div>
         </div>
+    </section>
 
+
+    <!-- ============== التقارير ============== -->
+    <section id="reports" class="page">
+        <h2>📅 التقارير</h2>
+
+        <div class="report-tabs">
+            <button class="active" onclick="changeReport('today', this)">🗓️ اليوم</button>
+            <button onclick="changeReport('week', this)">📅 الأسبوع</button>
+            <button onclick="changeReport('month', this)">📆 الشهر</button>
+            <button onclick="changeReport('year', this)">📊 السنة</button>
+            <button onclick="changeReport('all', this)">📋 الكل</button>
+        </div>
+
+        <div class="cards">
+            <div class="card card-blue">
+                <span>💰 إجمالي المبيعات</span>
+                <strong id="rptSales">0</strong>
+                <small>د.ع</small>
+            </div>
+            <div class="card card-orange">
+                <span>🛒 إجمالي المشتريات</span>
+                <strong id="rptPurchases">0</strong>
+                <small>د.ع</small>
+            </div>
+            <div class="card card-purple">
+                <span>💸 إجمالي المصاريف</span>
+                <strong id="rptExpenses">0</strong>
+                <small>د.ع</small>
+            </div>
+            <div class="card card-green">
+                <span>📈 صافي الربح</span>
+                <strong id="rptNet">0</strong>
+                <small>د.ع</small>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>📊 ملخص العمليات</h3>
+            <div class="stats-row">
+                <div class="stat">
+                    <span>عدد المبيعات</span>
+                    <strong id="rptSalesCount">0</strong>
+                </div>
+                <div class="stat">
+                    <span>عدد المشتريات</span>
+                    <strong id="rptPurchasesCount">0</strong>
+                </div>
+                <div class="stat">
+                    <span>عدد المصاريف</span>
+                    <strong id="rptExpensesCount">0</strong>
+                </div>
+                <div class="stat">
+                    <span>عدد التسديدات</span>
+                    <strong id="rptPaymentsCount">0</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3 id="rptDetailsTitle">📋 تفاصيل العمليات</h3>
+            <div id="rptDetails"></div>
+        </div>
     </section>
 
 
     <!-- ============== النسخ الاحتياطي ============== -->
     <section id="backup" class="page">
-
         <h2>💾 النسخ الاحتياطي</h2>
 
         <div class="panel">
@@ -420,7 +482,6 @@
             </p>
             <button class="big-btn danger" onclick="wipeAllData()">🗑️ حذف كل البيانات</button>
         </div>
-
     </section>
 
 </main>
@@ -442,4 +503,4 @@
 <script src="script.js"></script>
 
 </body>
-</html>>
+</html>
