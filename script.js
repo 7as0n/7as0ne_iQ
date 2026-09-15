@@ -163,7 +163,7 @@ function removeStockForEdit(p, unit, quantity) {
 }
 
 // ============================================================
-// حساب المجموع الكلي للمخزون (دالة مستقلة)
+// حساب المجموع الكلي للمخزون
 // ============================================================
 
 function renderInventorySummary() {
@@ -519,7 +519,6 @@ document.getElementById("expenseForm").addEventListener("submit", function (e) {
     renderAll();
     alert("✅ تمت إضافة المصروف");
 });
-
 // ============================================================
 // الحذف الذكي
 // ============================================================
@@ -832,6 +831,7 @@ function openEdit(type, id) {
     const modal = document.getElementById("editModal");
     const title = document.getElementById("editTitle");
     const body = document.getElementById("editBody");
+    if (!modal || !title || !body) return;
     body.innerHTML = "";
 
     if (type === "sale") {
@@ -1007,7 +1007,8 @@ function openEdit(type, id) {
 }
 
 function closeEdit() {
-    document.getElementById("editModal").style.display = "none";
+    const modal = document.getElementById("editModal");
+    if (modal) modal.style.display = "none";
     editContext = null;
 }
 
@@ -1316,7 +1317,6 @@ function saveEdit() {
         alert("✅ تم تعديل المادة");
     }
 }
-
 // ============================================================
 // عرض الزبائن
 // ============================================================
@@ -1641,9 +1641,18 @@ function renderDashboard() {
         .reduce((sum, s) => sum + s.total, 0);
     const todayPurchases = data.purchases.filter(p => p.date === d)
         .reduce((sum, p) => sum + p.total, 0);
+    const todayExpenses = data.expenses.filter(e => e.date === d)
+        .reduce((sum, e) => sum + e.amount, 0);
+
+    const todayNet = todaySales - todayPurchases - todayExpenses;
+
     const custDebt = data.customers.reduce((sum, c) => sum + c.debt, 0);
     const supDebt = data.suppliers.reduce((sum, s) => sum + s.debt, 0);
-    const expenses = data.expenses.reduce((sum, e) => sum + e.amount, 0);
+
+    const allSales = data.sales.reduce((sum, s) => sum + s.total, 0);
+    const allPurchases = data.purchases.reduce((sum, p) => sum + p.total, 0);
+    const allExpenses = data.expenses.reduce((sum, e) => sum + e.amount, 0);
+    const totalNet = allSales - allPurchases - allExpenses;
 
     const setText = (id, val) => {
         const el = document.getElementById(id);
@@ -1652,9 +1661,12 @@ function renderDashboard() {
 
     setText("todaySales", money(todaySales));
     setText("todayPurchases", money(todayPurchases));
+    setText("todayExpenses", money(todayExpenses));
+    setText("todayNet", money(todayNet));
     setText("customersDebt", money(custDebt));
     setText("suppliersDebt", money(supDebt));
-    setText("totalExpenses", money(expenses));
+    setText("totalExpenses", money(allExpenses));
+    setText("totalNet", money(totalNet));
     setText("productsCount", data.products.length);
 
     setText("statCustomers", data.customers.length);
@@ -1692,6 +1704,147 @@ function renderDashboard() {
                 <div class="item-title">${t.type}: ${escapeHTML(t.name)}</div>
                 <div class="item-details">
                     ${money(t.amount)} د.ع — 📅 ${t.date}
+                </div>
+            </div>
+        </div>
+    `).join("");
+}
+
+// ============================================================
+// التقارير (يومي / أسبوعي / شهري / سنوي)
+// ============================================================
+
+let currentReport = "today";
+
+function changeReport(period, button) {
+    currentReport = period;
+    document.querySelectorAll(".report-tabs button").forEach(b => b.classList.remove("active"));
+    if (button) button.classList.add("active");
+    renderReports();
+}
+
+function getDateRange(period) {
+    const now = new Date();
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+    let start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+
+    if (period === "week") {
+        start.setDate(start.getDate() - 6);
+    } else if (period === "month") {
+        start.setDate(start.getDate() - 29);
+    } else if (period === "year") {
+        start.setDate(start.getDate() - 364);
+    } else if (period === "all") {
+        return { start: null, end: null };
+    }
+
+    return {
+        start: start.toLocaleDateString("en-CA"),
+        end: end.toLocaleDateString("en-CA")
+    };
+}
+
+function filterByRange(items, range) {
+    if (!range.start || !range.end) return items;
+    return items.filter(x => x.date >= range.start && x.date <= range.end);
+}
+
+function renderReports() {
+    const range = getDateRange(currentReport);
+
+    const sales = filterByRange(data.sales, range);
+    const purchases = filterByRange(data.purchases, range);
+    const expenses = filterByRange(data.expenses, range);
+    const payments = filterByRange(data.payments, range);
+
+    const totalSales = sales.reduce((s, x) => s + x.total, 0);
+    const totalPurchases = purchases.reduce((s, x) => s + x.total, 0);
+    const totalExpenses = expenses.reduce((s, x) => s + x.amount, 0);
+    const net = totalSales - totalPurchases - totalExpenses;
+
+    const setText = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+    };
+
+    setText("rptSales", money(totalSales));
+    setText("rptPurchases", money(totalPurchases));
+    setText("rptExpenses", money(totalExpenses));
+    setText("rptNet", money(net));
+
+    setText("rptSalesCount", sales.length);
+    setText("rptPurchasesCount", purchases.length);
+    setText("rptExpensesCount", expenses.length);
+    setText("rptPaymentsCount", payments.length);
+
+    const titles = {
+        today: "📋 تفاصيل اليوم",
+        week: "📋 تفاصيل آخر 7 أيام",
+        month: "📋 تفاصيل آخر 30 يوم",
+        year: "📋 تفاصيل آخر سنة",
+        all: "📋 كل العمليات"
+    };
+    const titleEl = document.getElementById("rptDetailsTitle");
+    if (titleEl) titleEl.textContent = titles[currentReport] || "📋 تفاصيل العمليات";
+
+    // بناء قائمة العمليات
+    const allTransactions = [
+        ...sales.map(s => ({
+            type: "بيع",
+            icon: "💰",
+            name: s.product,
+            person: s.customer,
+            amount: s.total,
+            debt: s.debt,
+            date: s.date
+        })),
+        ...purchases.map(p => ({
+            type: "شراء",
+            icon: "🛒",
+            name: p.product,
+            person: p.supplier,
+            amount: p.total,
+            debt: p.debt,
+            date: p.date
+        })),
+        ...expenses.map(e => ({
+            type: "مصروف",
+            icon: "💸",
+            name: e.name,
+            person: "",
+            amount: e.amount,
+            debt: 0,
+            date: e.date
+        })),
+        ...payments.map(p => ({
+            type: p.type === "customer" ? "تسديد زبون" : "تسديد مجهز",
+            icon: "💵",
+            name: p.person,
+            person: "",
+            amount: p.amount,
+            debt: 0,
+            date: p.date
+        }))
+    ].sort((a, b) => a.date < b.date ? 1 : -1);
+
+    const c = document.getElementById("rptDetails");
+    if (!c) return;
+
+    if (!allTransactions.length) {
+        c.innerHTML = `<div class="empty">لا توجد عمليات في هذه الفترة</div>`;
+        return;
+    }
+
+    c.innerHTML = allTransactions.map(t => `
+        <div class="item">
+            <div class="item-info">
+                <div class="item-title">${t.icon} ${t.type}: ${escapeHTML(t.name)}</div>
+                <div class="item-details">
+                    ${t.person ? escapeHTML(t.person) + " — " : ""}
+                    <strong>${money(t.amount)} د.ع</strong>
+                    ${t.debt > 0 ? ` <span class="debt-positive">(دين: ${money(t.debt)})</span>` : ""}
+                    <br>📅 ${t.date}
                 </div>
             </div>
         </div>
@@ -2517,6 +2670,7 @@ function renderAll() {
     renderExpenses();
     renderDebts();
     renderDashboard();
+    renderReports();
     renderCashbox();
     renderBackupInfo();
 }
