@@ -489,6 +489,22 @@ h3 {
     background: #0e7490;
 }
 
+.edit-btn {
+    background: var(--warning);
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.edit-btn:hover {
+    background: #c2410c;
+}
+
 .empty {
     text-align: center;
     color: var(--text-light);
@@ -664,7 +680,7 @@ h3 {
     background: #e2e8f0;
 }
 
-/* ========== Customer History Modal ========== */
+/* ========== History Modal ========== */
 .history-table {
     width: 100%;
     border-collapse: collapse;
@@ -715,6 +731,174 @@ h3 {
     font-size: 18px;
 }
 
+/* ========== Edit Modal / Debt Modal ========== */
+.edit-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+}
+
+.edit-box {
+    background: white;
+    border-radius: 14px;
+    padding: 24px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.edit-box h3 {
+    text-align: center;
+    margin-bottom: 18px;
+    color: var(--text);
+}
+
+.edit-body label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: var(--text-light);
+    font-weight: 600;
+}
+
+.edit-body input,
+.edit-body select,
+.edit-body textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    margin-bottom: 12px;
+    background: #f8fafc;
+    transition: all 0.2s;
+}
+
+.edit-body input:focus,
+.edit-body select:focus,
+.edit-body textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.edit-body small {
+    display: block;
+    color: #64748b;
+    font-size: 12px;
+    margin-top: -8px;
+    margin-bottom: 12px;
+}
+
+.edit-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.edit-actions button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.edit-save {
+    background: var(--success);
+    color: white;
+}
+
+.edit-save:hover {
+    background: #15803d;
+}
+
+.edit-cancel {
+    background: #f1f5f9;
+    color: var(--text);
+}
+
+.edit-cancel:hover {
+    background: #e2e8f0;
+}
+
+/* ========== Debt Actions ========== */
+.debt-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+/* ========== Report Tabs ========== */
+.report-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.report-tabs button {
+    border: 1px solid var(--border);
+    background: white;
+    padding: 10px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.report-tabs button:hover {
+    background: #f1f5f9;
+}
+
+.report-tabs button.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+/* ========== Inventory Summary ========== */
+.inventory-summary {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #bae6fd;
+}
+
+.inventory-summary h3 {
+    color: #0369a1;
+    margin-bottom: 14px;
+}
+
+.inventory-summary .stat {
+    background: white;
+    border-color: #bae6fd;
+}
+
+.inventory-summary .stat strong {
+    color: #0369a1;
+    font-size: 26px;
+}
+
 /* ========== Responsive ========== */
 @media (max-width: 800px) {
 
@@ -759,6 +943,10 @@ h3 {
     .search-input {
         min-width: 100%;
     }
+
+    .debt-actions {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 500px) {
@@ -784,9 +972,10 @@ h3 {
     .delete-btn,
     .pay-btn,
     .history-btn,
-    .print-btn {
+    .print-btn,
+    .edit-btn {
         flex: 1;
-        min-width: 70px;
+        min-width: 60px;
     }
 
     .stats-row {
@@ -814,148 +1003,4 @@ h3 {
     .invoice-actions {
         display: none !important;
     }
-}
-/* ========== Inventory Summary ========== */
-.inventory-summary {
-    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-    border: 1px solid #bae6fd;
-}
-
-.inventory-summary h3 {
-    color: #0369a1;
-    margin-bottom: 14px;
-}
-
-.inventory-summary .stat {
-    background: white;
-    border-color: #bae6fd;
-}
-
-.inventory-summary .stat strong {
-    color: #0369a1;
-    font-size: 26px;
-}
-/* ========== Edit Modal ========== */
-.edit-modal {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    padding: 20px;
-}
-
-.edit-box {
-    background: white;
-    border-radius: 14px;
-    padding: 24px;
-    max-width: 500px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
-
-.edit-box h3 {
-    text-align: center;
-    margin-bottom: 18px;
-    color: var(--text);
-}
-
-.edit-body label {
-    display: block;
-    margin-bottom: 6px;
-    font-size: 13px;
-    color: var(--text-light);
-    font-weight: 600;
-}
-
-.edit-body input,
-.edit-body select {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    font-size: 14px;
-    font-family: inherit;
-    margin-bottom: 12px;
-    background: #f8fafc;
-}
-
-.edit-body input:focus,
-.edit-body select:focus {
-    outline: none;
-    border-color: var(--primary);
-    background: white;
-}
-
-.edit-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.edit-actions button {
-    flex: 1;
-    padding: 12px;
-    border-radius: 10px;
-    border: none;
-    cursor: pointer;
-    font-family: inherit;
-    font-weight: 600;
-    font-size: 14px;
-    transition: all 0.2s;
-}
-
-.edit-save {
-    background: var(--success);
-    color: white;
-}
-
-.edit-save:hover {
-    background: #15803d;
-}
-
-.edit-cancel {
-    background: #f1f5f9;
-    color: var(--text);
-}
-
-.edit-cancel:hover {
-    background: #e2e8f0;
-}
-/* ========== Report Tabs ========== */
-.report-tabs {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 18px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-}
-
-.report-tabs button {
-    border: 1px solid var(--border);
-    background: white;
-    padding: 10px 18px;
-    border-radius: 10px;
-    cursor: pointer;
-    white-space: nowrap;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text);
-    transition: all 0.2s;
-    font-family: inherit;
-}
-
-.report-tabs button:hover {
-    background: #f1f5f9;
-}
-
-.report-tabs button.active {
-    background: var(--primary);
-    color: white;
-    border-color: var(--primary);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
