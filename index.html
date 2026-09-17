@@ -93,6 +93,28 @@
         </div>
 
         <div class="panel">
+            <h3>📊 مقارنة وتفاصيل الربح</h3>
+            <div class="stats-row">
+                <div class="stat">
+                    <span>📅 ربح الأمس</span>
+                    <strong id="yesterdayNet">0</strong>
+                </div>
+                <div class="stat">
+                    <span>📊 الفرق عن الأمس</span>
+                    <strong id="netDiff">0</strong>
+                </div>
+                <div class="stat">
+                    <span>🏆 أفضل يوم هذا الشهر</span>
+                    <strong id="bestDayNet">0</strong>
+                </div>
+                <div class="stat">
+                    <span>📅 تاريخ أفضل يوم</span>
+                    <strong id="bestDayDate" style="font-size:14px;">—</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
             <h3>📊 ملخص سريع</h3>
             <div class="stats-row">
                 <div class="stat">
@@ -301,6 +323,11 @@
     <section id="debts" class="page">
         <h2>📒 الديون</h2>
 
+        <div class="debt-actions">
+            <button class="big-btn" onclick="openAddDebt('customer')">➕ دين لنا (على زبون)</button>
+            <button class="big-btn danger" onclick="openAddDebt('supplier')">➕ دين علينا (لمجهز)</button>
+        </div>
+
         <div class="debt-box">
             <h3>👤 ديون لنا (على الزبائن)</h3>
             <div id="customerDebts"></div>
@@ -494,6 +521,18 @@
         <div class="edit-actions">
             <button class="edit-save" onclick="saveEdit()">💾 حفظ</button>
             <button class="edit-cancel" onclick="closeEdit()">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============== نافذة إضافة دين مباشر ============== -->
+<div id="debtModal" class="edit-modal" style="display:none;">
+    <div class="edit-box">
+        <h3 id="debtTitle">إضافة دين</h3>
+        <div id="debtBody" class="edit-body"></div>
+        <div class="edit-actions">
+            <button class="edit-save" onclick="saveDebt()">💾 حفظ</button>
+            <button class="edit-cancel" onclick="closeDebt()">إلغاء</button>
         </div>
     </div>
 </div>
